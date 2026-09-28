@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +71,9 @@ export function DepartmentsClient({ initialDepartments = [] }: { initialDepartme
 
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  {dept.name}
+                  <Link href={`/departments/${dept.id}`} className="hover:text-primary transition-colors hover:underline">
+                    {dept.name}
+                  </Link>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1 line-clamp-2">
                   {dept.description || 'No division description provided.'}
@@ -82,9 +85,12 @@ export function DepartmentsClient({ initialDepartments = [] }: { initialDepartme
                   <Users className="size-3.5" />
                   {dept._count?.employees || 0} Staff Members
                 </span>
-                <Badge variant="success" className="text-[10px]">
-                  Active
-                </Badge>
+                <Link
+                  href={`/departments/${dept.id}`}
+                  className="font-semibold text-xs text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  View Details →
+                </Link>
               </div>
             </CardContent>
           </Card>
