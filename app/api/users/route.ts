@@ -3,7 +3,11 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api/response';
 import { getSession } from '@/lib/auth/session';
 import { recordAuditLog } from '@/lib/audit';
-import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -77,7 +81,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = hashPassword(password);
 
     // Resolve role name
     let roleName = 'EMPLOYEE';

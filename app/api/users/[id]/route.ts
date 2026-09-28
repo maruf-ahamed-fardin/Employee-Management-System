@@ -3,7 +3,11 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api/response';
 import { getSession } from '@/lib/auth/session';
 import { recordAuditLog } from '@/lib/audit';
-import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -36,7 +40,7 @@ export async function PATCH(
     }
 
     if (body.newPassword) {
-      updateData.passwordHash = await bcrypt.hash(body.newPassword, 10);
+      updateData.passwordHash = hashPassword(body.newPassword);
       updateData.passwordChangedAt = new Date();
     }
 
