@@ -16,7 +16,11 @@ export default async function EditEmployeePage({
   const { employeeId } = await params;
 
   const [employee, departments, positions, managers] = await Promise.all([
-    prisma.employee.findUnique({ where: { id: employeeId } }),
+    prisma.employee.findFirst({
+      where: {
+        OR: [{ id: employeeId }, { employeeCode: employeeId }],
+      },
+    }),
     prisma.department.findMany({ where: { isActive: true }, select: { id: true, name: true } }),
     prisma.position.findMany({ where: { isActive: true }, select: { id: true, title: true, departmentId: true } }),
     prisma.employee.findMany({ where: { status: 'ACTIVE', id: { not: employeeId } }, select: { id: true, firstName: true, lastName: true } }),

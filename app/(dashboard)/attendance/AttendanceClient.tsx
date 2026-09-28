@@ -2,22 +2,33 @@
 
 import { useState } from 'react';
 import { CheckInCard } from '@/components/attendance/CheckInCard';
+import { CorrectionDialog } from '@/components/attendance/CorrectionDialog';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatTime, formatDuration } from '@/lib/utils/date';
-import { Calendar, Filter } from 'lucide-react';
+import { Calendar, Filter, Pencil } from 'lucide-react';
+
+interface EmployeeOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  employeeCode: string;
+}
 
 export function AttendanceClient({
   initialToday,
   initialList = [],
   departments = [],
+  employees = [],
   todayDate,
 }: {
   initialToday?: any;
   initialList: any[];
   departments: { id: string; name: string }[];
+  employees?: EmployeeOption[];
   todayDate: string;
 }) {
   const [list, setList] = useState<any[]>(initialList);
@@ -101,6 +112,12 @@ export function AttendanceClient({
             <option value="ABSENT">Absent</option>
             <option value="ON_LEAVE">On Leave</option>
           </select>
+
+          <CorrectionDialog
+            employees={employees}
+            defaultDate={selectedDate}
+            onSuccess={() => fetchAttendance(selectedDate, departmentId, statusFilter)}
+          />
         </div>
       </div>
 
@@ -115,12 +132,13 @@ export function AttendanceClient({
               <TableHead>Last Out</TableHead>
               <TableHead>Worked Hours</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {list.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-400">
+                <TableCell colSpan={7} className="h-32 text-center text-slate-400">
                   No attendance records logged for {selectedDate}.
                 </TableCell>
               </TableRow>
@@ -170,6 +188,32 @@ export function AttendanceClient({
                       >
                         {item.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <CorrectionDialog
+                        employees={employees}
+                        defaultDate={selectedDate}
+                        record={{
+                          id: item.id,
+                          employeeId: item.employeeId,
+                          workDate: item.workDate,
+                          status: item.status,
+                          firstInAt: item.firstInAt,
+                          lastOutAt: item.lastOutAt,
+                          note: item.note,
+                        }}
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-[#252175] dark:text-[#F37021] hover:bg-[#252175]/10"
+                            title="Edit / Correct Time"
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        }
+                        onSuccess={() => fetchAttendance(selectedDate, departmentId, statusFilter)}
+                      />
                     </TableCell>
                   </TableRow>
                 );

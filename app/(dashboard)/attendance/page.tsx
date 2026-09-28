@@ -11,7 +11,7 @@ export default async function AttendancePage() {
   const today = getTodayDateString();
   const session = await getSession();
 
-  const [todayAttendance, attendanceList, departments] = await Promise.all([
+  const [todayAttendance, attendanceList, departments, employees] = await Promise.all([
     session?.employeeId
       ? prisma.attendance.findUnique({
           where: { employeeId_workDate: { employeeId: session.employeeId, workDate: today } },
@@ -30,6 +30,11 @@ export default async function AttendancePage() {
       where: { isActive: true },
       select: { id: true, name: true },
     }),
+    prisma.employee.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true, firstName: true, lastName: true, employeeCode: true },
+      orderBy: { firstName: 'asc' },
+    }),
   ]);
 
   return (
@@ -47,6 +52,7 @@ export default async function AttendancePage() {
         initialToday={todayAttendance}
         initialList={attendanceList as any}
         departments={departments}
+        employees={employees}
         todayDate={today}
       />
     </div>

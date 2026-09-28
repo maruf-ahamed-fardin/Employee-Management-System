@@ -9,45 +9,125 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  passwordHash     String
-  role             String    @default("employee") // superadmin, admin, manager, employee
-  employeeId       String?   @unique
-  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, LOCKED
-  lastLoginAt      DateTime?
-  failedLoginCount Int       @default(0)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+// ─── Identity, RBAC & Access ──────────────────────────────────────────────────
 
-  employee      Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  notifications Notification[]
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  role              String    @default("employee") // legacy/convenience string: super_admin, admin, manager, employee, hr
+  roleId            String?
+  employeeId        String?   @unique
+  status            String    @default("ACTIVE") // ACTIVE, INACTIVE, LOCKED
+  lastLoginAt       DateTime?
+  failedLoginCount  Int       @default(0)
+  lockedUntil       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  roleRef               Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  employee              Employee?            @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  sessions              Session[]
+  passwordResetTokens   PasswordResetToken[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  reviewedLeaveRequests LeaveRequest[]       @relation("ReviewedLeaveRequests")
+  uploadedDocuments     Document[]           @relation("UploadedDocuments")
 }
 
+model Role {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. employee.view, leave.approve, role.manage
+  module      String   // employee, department, position, attendance, leave, payroll, document, report, setting, user, audit
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  scope        String   @default("ALL") // OWN, TEAM, ALL
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  ip         String?
+  userAgent  String?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Organization ─────────────────────────────────────────────────────────────
+
 model Department {
-  id             String   @id @default(uuid())
-  name           String   @unique
-  code           String   @unique
+  id             String    @id @default(uuid())
+  name           String    @unique
+  code           String    @unique
   description    String?
   headEmployeeId String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean   @default(true)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  employees Employee[]
+  head      Employee?  @relation("DepartmentHead", fields: [headEmployeeId], references: [id], onDelete: SetNull)
+  employees Employee[] @relation("DepartmentEmployees")
   positions Position[]
 }
 
 model Position {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   title        String
   departmentId String?
   level        String?
-  baseSalary   Float    @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  baseSalary   Float     @default(0)
+  isActive     Boolean   @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   employees  Employee[]
@@ -77,11 +157,14 @@ model Employee {
   headline         String?
   businessPhone    String?
   socialLinks      String? // JSON string: [{ kind, url }]
+  deactivatedAt    DateTime?
+  deletedAt        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   user           User?
-  department     Department       @relation(fields: [departmentId], references: [id])
+  department     Department       @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+  headOf         Department[]     @relation("DepartmentHead")
   position       Position         @relation(fields: [positionId], references: [id])
   manager        Employee?        @relation("DirectReports", fields: [managerId], references: [id], onDelete: SetNull)
   directReports  Employee[]       @relation("DirectReports")
@@ -90,7 +173,36 @@ model Employee {
   leaveRequests  LeaveRequest[]
   payrollRecords PayrollRecord[]
   documents      Document[]
+  teamProfile    TeamProfile?
 }
+
+// ─── Team Profile (Digital Business Card / vCard / NFC) ───────────────────────
+
+model TeamProfile {
+  employeeId        String   @id
+  businessPhone     String?
+  headline          String?
+  showPersonalPhone Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  links    TeamProfileLink[]
+}
+
+model TeamProfileLink {
+  id         String   @id @default(uuid())
+  employeeId String
+  kind       String   // LINKEDIN, GITHUB, TWITTER, PORTFOLIO, FACEBOOK, INSTAGRAM, DISCORD, WEBSITE, OTHER
+  url        String
+  createdAt  DateTime @default(now())
+
+  profile TeamProfile @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+
+  @@unique([employeeId, kind])
+}
+
+// ─── Attendance ───────────────────────────────────────────────────────────────
 
 model Attendance {
   id            String   @id @default(uuid())
@@ -119,36 +231,53 @@ model AttendanceRecord {
   type         String // CHECK_IN, CHECK_OUT
   occurredAt   String // ISO timestamp
   source       String   @default("WEB") // WEB, MOBILE, BIOMETRIC, RFID, ADMIN
+  deviceId     String?
   ip           String?
   createdAt    DateTime @default(now())
 
   attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
 }
 
+// ─── Leave & Calendar ─────────────────────────────────────────────────────────
+
+model Holiday {
+  id        String   @id @default(uuid())
+  date      String   @unique // YYYY-MM-DD
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model LeaveType {
-  id          String   @id @default(uuid())
-  name        String
-  code        String   @unique
-  defaultDays Float    @default(14)
-  isPaid      Boolean  @default(true)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  name               String
+  code               String    @unique
+  defaultDays        Float     @default(14)
+  defaultDaysPerYear Float     @default(14)
+  requiresDocument   Boolean   @default(false)
+  carryForwardMax    Float     @default(0)
+  isPaid             Boolean   @default(true)
+  isActive           Boolean   @default(true)
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   balances LeaveBalance[]
   requests LeaveRequest[]
 }
 
 model LeaveBalance {
-  id          String   @id @default(uuid())
-  employeeId  String
-  leaveTypeId String
-  year        Int
-  allocated   Float    @default(0)
-  used        Float    @default(0)
-  pending     Float    @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  employeeId          String
+  leaveTypeId         String
+  year                Int
+  allocated           Float    @default(0)
+  carriedForward      Float    @default(0)
+  used                Float    @default(0)
+  pending             Float    @default(0)
+  carryForwardSettled Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
@@ -157,23 +286,27 @@ model LeaveBalance {
 }
 
 model LeaveRequest {
-  id           String    @id @default(uuid())
-  employeeId   String
-  leaveTypeId  String
-  startDate    String // YYYY-MM-DD
-  endDate      String // YYYY-MM-DD
-  days         Float
-  reason       String
-  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
-  reviewedById String?
-  reviewedAt   DateTime?
-  reviewNote   String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                   String    @id @default(uuid())
+  employeeId           String
+  leaveTypeId          String
+  startDate            String // YYYY-MM-DD
+  endDate              String // YYYY-MM-DD
+  days                 Float
+  countsAgainstBalance Boolean   @default(true)
+  reason               String
+  status               String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  reviewedById         String?
+  reviewedAt           DateTime?
+  reviewNote           String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  reviewedByUser User?     @relation("ReviewedLeaveRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
 }
+
+// ─── Payroll ──────────────────────────────────────────────────────────────────
 
 model PayrollRecord {
   id            String    @id @default(uuid())
@@ -195,37 +328,89 @@ model PayrollRecord {
   @@unique([employeeId, month, year])
 }
 
-model Document {
-  id           String    @id @default(uuid())
-  employeeId   String
-  title        String
-  documentType String // NATIONAL_ID, PASSPORT, CONTRACT, CERTIFICATE, OTHER
-  storageUrl   String
-  mimeType     String
-  sizeBytes    Int
-  expiresAt    String? // YYYY-MM-DD
-  isSensitive  Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+// ─── Documents ────────────────────────────────────────────────────────────────
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+model DocumentType {
+  id          String    @id @default(uuid())
+  name        String
+  code        String    @unique
+  isSensitive Boolean   @default(false)
+  hasExpiry   Boolean   @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  documents Document[]
 }
 
+model Document {
+  id             String    @id @default(uuid())
+  employeeId     String
+  documentTypeId String?
+  title          String
+  documentType   String    @default("OTHER") // NATIONAL_ID, PASSPORT, CONTRACT, CERTIFICATE, OTHER
+  storageUrl     String
+  mimeType       String
+  sizeBytes      Int
+  expiresAt      String? // YYYY-MM-DD
+  isSensitive    Boolean   @default(false)
+  uploadedById   String?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documentTypeRef DocumentType? @relation(fields: [documentTypeId], references: [id], onDelete: SetNull)
+  uploadedBy      User?         @relation("UploadedDocuments", fields: [uploadedById], references: [id], onDelete: SetNull)
+}
+
+// ─── Notifications & Auditing ─────────────────────────────────────────────────
+
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  title     String
-  body      String
-  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ALERT
-  isRead    Boolean  @default(false)
-  link      String?
-  createdAt DateTime @default(now())
+  id         String    @id @default(uuid())
+  userId     String
+  title      String
+  body       String
+  type       String    @default("INFO") // INFO, SUCCESS, WARNING, ALERT
+  isRead     Boolean   @default(false)
+  link       String?
+  entityType String?
+  entityId   String?
+  readAt     DateTime?
+  dedupeKey  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  action      String   // e.g. employee.create, employee.update, auth.login, leave.approve, role.update
+  entityType  String   // employee, department, position, leave, attendance, user, role, document, setting
+  entityId    String?
+  before      String?  // JSON string
+  after       String?  // JSON string
+  ip          String?
+  userAgent   String?
+  requestId   String?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 }
 
 model Setting {
   key       String   @id
   value     String // JSON representation
   updatedAt DateTime @updatedAt
+}
+
+model RateLimit {
+  key          String    @id
+  hits         Int       @default(1)
+  expiresAt    DateTime
+  blockedUntil DateTime?
 }

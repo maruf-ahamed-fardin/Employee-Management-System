@@ -20,7 +20,13 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/payroll') ||
     pathname.startsWith('/reports') ||
     pathname.startsWith('/users') ||
-    pathname.startsWith('/settings');
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/team-profile') ||
+    pathname.startsWith('/audit-logs') ||
+    pathname.startsWith('/roles') ||
+    pathname.startsWith('/notifications') ||
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/documents');
 
   // If user is logged in and trying to access /login, redirect to /dashboard
   if (sessionCookie?.value && isAuthPage) {

@@ -1,63 +1,88 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Stethoscope, Palmtree, UserCheck } from 'lucide-react';
+'use client';
 
-export function LeaveBalanceCards({
-  balances = [],
-}: {
-  balances?: Array<{
-    id: string;
-    leaveTypeName: string;
-    allocated: number;
-    used: number;
-    available: number;
-  }>;
-}) {
-  const defaultTypes = [
-    { name: 'Annual Leave', allocated: 15, used: 4, available: 11, icon: Palmtree, color: 'text-indigo-500 bg-indigo-500/10' },
-    { name: 'Sick Leave', allocated: 10, used: 2, available: 8, icon: Stethoscope, color: 'text-rose-500 bg-rose-500/10' },
-    { name: 'Casual Leave', allocated: 5, used: 1, available: 4, icon: Calendar, color: 'text-amber-500 bg-amber-500/10' },
-    { name: 'Maternity/Paternity', allocated: 30, used: 0, available: 30, icon: UserCheck, color: 'text-emerald-500 bg-emerald-500/10' },
-  ];
+import { BalanceAdjustDialog } from './BalanceAdjustDialog';
 
-  const displayList = balances.length > 0
-    ? balances.map((b) => ({
-        name: b.leaveTypeName,
-        allocated: b.allocated,
-        used: b.used,
-        available: b.available,
-        icon: Calendar,
-        color: 'text-indigo-500 bg-indigo-500/10',
-      }))
-    : defaultTypes;
+export interface LeaveBalanceItem {
+  id: string;
+  leaveTypeName: string;
+  allocated: number;
+  used: number;
+  pending?: number;
+  available: number;
+  carriedForward?: number;
+}
+
+interface Props {
+  balances: LeaveBalanceItem[];
+  canManage?: boolean;
+  onRefresh?: () => void;
+}
+
+export function LeaveBalanceCards({ balances, canManage = false, onRefresh }: Props) {
+  if (balances.length === 0) {
+    return (
+      <div className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">
+        No leave quotas allocated for the current fiscal year.
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {displayList.map((item) => {
-        const Icon = item.icon;
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {balances.map((b) => {
+        const total = Math.max(b.allocated + (b.carriedForward || 0), 1);
+        const usedPct = Math.min(100, Math.round((b.used / total) * 100));
+        const pendingPct = Math.min(100 - usedPct, Math.round(((b.pending || 0) / total) * 100));
+        const availableDays = Math.max(0, b.available);
+
         return (
-          <Card key={item.name} className="hover:border-indigo-500/30 transition-all">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {item.name}
+          <div
+            key={b.id}
+            className="rounded-2xl border bg-card p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-semibold text-foreground text-sm tracking-tight">
+                  {b.leaveTypeName}
                 </span>
-                <span className={`p-2 rounded-xl ${item.color}`}>
-                  <Icon className="size-4" />
-                </span>
+                {canManage && (
+                  <BalanceAdjustDialog
+                    balanceId={b.id}
+                    leaveTypeName={b.leaveTypeName}
+                    currentAllocated={b.allocated}
+                    onSuccess={onRefresh}
+                  />
+                )}
               </div>
-              <div className="mt-3 flex items-baseline justify-between">
-                <div>
-                  <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                    {item.available}
-                  </span>
-                  <span className="text-xs text-slate-400 ml-1">days left</span>
-                </div>
-                <span className="text-xs text-slate-400 font-medium">
-                  {item.used} / {item.allocated} used
+
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-3xl font-extrabold text-[#252175] dark:text-[#F37021]">
+                  {availableDays}
                 </span>
+                <span className="text-xs text-muted-foreground font-medium">days left</span>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Progress bar */}
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted flex">
+                <div
+                  className="bg-[#252175] dark:bg-[#F37021] transition-all"
+                  style={{ width: `${usedPct}%` }}
+                  title={`Used: ${b.used}d`}
+                />
+                <div
+                  className="bg-amber-400 transition-all"
+                  style={{ width: `${pendingPct}%` }}
+                  title={`Pending: ${b.pending || 0}d`}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+              <span>Used: {b.used}d</span>
+              {Boolean(b.pending) && <span className="text-amber-600">Pending: {b.pending}d</span>}
+              <span>Total: {b.allocated}d</span>
+            </div>
+          </div>
         );
       })}
     </div>

@@ -10,8 +10,13 @@ export async function generateMetadata({
   params: Promise<{ employeeId: string }>;
 }) {
   const { employeeId } = await params;
-  const employee = await prisma.employee.findUnique({
-    where: { id: employeeId },
+  const employee = await prisma.employee.findFirst({
+    where: {
+      OR: [
+        { id: employeeId },
+        { employeeCode: employeeId },
+      ],
+    },
     select: { firstName: true, lastName: true },
   });
 
@@ -27,8 +32,13 @@ export default async function EmployeeDetailPage({
 }) {
   const { employeeId } = await params;
 
-  const employee = await prisma.employee.findUnique({
-    where: { id: employeeId },
+  const employee = await prisma.employee.findFirst({
+    where: {
+      OR: [
+        { id: employeeId },
+        { employeeCode: employeeId },
+      ],
+    },
     include: {
       department: true,
       position: true,

@@ -1,111 +1,77 @@
 import { prisma } from '@/lib/db';
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
-import { formatDate } from '@/lib/utils/date';
-import { Shield, UserPlus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { UsersRound, Shield } from 'lucide-react';
+import { UserManagementClient } from '@/components/users/UserManagementClient';
 
 export const metadata = {
   title: 'User Management',
+  description: 'Manage administrator logins, user accounts, and role-based permissions.',
 };
 
 export default async function UsersPage() {
-  const users = await prisma.user.findMany({
-    include: {
-      employee: {
-        include: { department: true },
+  const [users, roles, unlinkedEmployees] = await Promise.all([
+    prisma.user.findMany({
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            email: true,
+            department: { select: { id: true, name: true } },
+          },
+        },
+        roleRef: {
+          select: { id: true, name: true, description: true },
+        },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.role.findMany({
+      select: { id: true, name: true, description: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.employee.findMany({
+      where: {
+        status: 'ACTIVE',
+        user: null, // Employees without user accounts!
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+        email: true,
+      },
+      orderBy: { firstName: 'asc' },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            User Accounts & RBAC
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            System logins, role-based permission scopes, and authentication records
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-[#252175]/10 dark:bg-[#252175]/30">
+              <UsersRound className="size-6 text-[#252175] dark:text-[#F37021]" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[#252175] dark:text-white">
+                User Management & Access Control
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Authorize operator accounts, assign permission roles, and manage credentials.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User Account</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Linked Employee</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Login</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-400">
-                  No registered users in database.
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        initials={u.email.slice(0, 2).toUpperCase()}
-                        size="sm"
-                      />
-                      <div>
-                        <p className="font-bold text-slate-900 dark:text-white text-xs">
-                          {u.email}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-mono">ID: {u.id.slice(0, 8)}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        u.role === 'superadmin'
-                          ? 'destructive'
-                          : u.role === 'admin'
-                          ? 'default'
-                          : u.role === 'manager'
-                          ? 'warning'
-                          : 'secondary'
-                      }
-                      className="capitalize font-bold text-xs"
-                    >
-                      <Shield className="size-3 mr-1" />
-                      {u.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    {u.employee ? `${u.employee.firstName} ${u.employee.lastName}` : 'Unlinked Account'}
-                  </TableCell>
-                  <TableCell className="text-xs text-slate-500">
-                    {u.employee?.department?.name || 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={u.status === 'ACTIVE' ? 'success' : 'secondary'}>
-                      {u.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-slate-500 whitespace-nowrap">
-                    {u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Never'}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <UserManagementClient
+        initialUsers={users}
+        roles={roles}
+        unlinkedEmployees={unlinkedEmployees}
+      />
     </div>
   );
 }

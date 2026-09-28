@@ -23,8 +23,24 @@ export function Sidebar() {
         sidebarCollapsed ? 'w-20' : 'w-64'
       )}
     >
+      {/* Floating Edge Collapse / Expand Toggle Button */}
+      <button
+        onClick={toggleSidebar}
+        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        className="absolute -right-3 top-5 z-40 flex size-6 items-center justify-center rounded-full border border-border bg-card shadow-md hover:bg-accent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer"
+      >
+        <ChevronLeft
+          className={cn('size-3.5 transition-transform duration-200', sidebarCollapsed && 'rotate-180')}
+        />
+      </button>
+
       {/* Brand Header with SeloraX Logo */}
-      <div className="flex h-16 items-center justify-between px-3.5 border-b border-border">
+      <div
+        className={cn(
+          'flex h-16 items-center border-b border-border',
+          sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4 pr-5'
+        )}
+      >
         <Link
           href="/dashboard"
           className="flex items-center gap-2.5 overflow-hidden group focus-visible:outline-none"
@@ -39,15 +55,6 @@ export function Sidebar() {
             </div>
           )}
         </Link>
-        <button
-          onClick={toggleSidebar}
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer transition-colors"
-        >
-          <ChevronLeft
-            className={cn('size-4 transition-transform duration-200', sidebarCollapsed && 'rotate-180')}
-          />
-        </button>
       </div>
 
       {/* Navigation Items */}

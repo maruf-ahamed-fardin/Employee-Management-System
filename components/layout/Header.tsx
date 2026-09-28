@@ -5,8 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Breadcrumb } from './Breadcrumb';
 import { Avatar } from '@/components/ui/avatar';
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@/components/ui/dropdown';
-import { Menu, Moon, Sun, Bell, LogOut, UserCircle } from 'lucide-react';
+import { Menu, Moon, Sun, Bell, LogOut, UserCircle, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { CommandSearch } from './CommandSearch';
 
 export function Header() {
   const { setMobileMenuOpen, theme, toggleTheme } = useUIStore();
@@ -29,6 +31,11 @@ export function Header() {
         </div>
       </div>
 
+      {/* Middle: Universal Search Bar */}
+      <div className="flex items-center gap-2">
+        <CommandSearch />
+      </div>
+
       {/* Right Action Icons & User Menu */}
       <div className="flex items-center gap-2.5">
         {/* Theme Toggle */}
@@ -42,17 +49,8 @@ export function Header() {
           <span className="sr-only">Toggle theme</span>
         </button>
 
-        {/* Notifications Icon */}
-        <div className="relative">
-          <button
-            type="button"
-            className="rounded-xl p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white transition-colors cursor-pointer"
-          >
-            <Bell className="size-4" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-[#f37021] ring-2 ring-white dark:ring-slate-900 shadow-sm shadow-orange-500/50" />
-            <span className="sr-only">Notifications</span>
-          </button>
-        </div>
+        {/* Live Notification Bell */}
+        <NotificationBell />
 
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
 
@@ -82,14 +80,18 @@ export function Header() {
               </p>
               <p className="text-[11px] text-slate-400 truncate">{user?.email || 'admin@selorax.test'}</p>
             </div>
-            {user?.employeeId && (
-              <DropdownItem>
-                <Link href={`/employees/${user.employeeId}`} className="flex items-center gap-2 size-full">
-                  <UserCircle className="size-4" />
-                  <span>My Profile</span>
-                </Link>
-              </DropdownItem>
-            )}
+            <DropdownItem>
+              <Link href="/profile" className="flex items-center gap-2 size-full">
+                <UserCircle className="size-4" />
+                <span>My Profile</span>
+              </Link>
+            </DropdownItem>
+            <DropdownItem>
+              <Link href="/profile/security" className="flex items-center gap-2 size-full">
+                <Shield className="size-4" />
+                <span>Password & Sign-in</span>
+              </Link>
+            </DropdownItem>
             <DropdownItem onClick={signOut} destructive>
               <LogOut className="size-4" />
               <span>Sign out</span>
