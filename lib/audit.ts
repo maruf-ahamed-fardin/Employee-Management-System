@@ -25,7 +25,7 @@ export async function createAuditLog(input: AuditLogInput) {
         entityId: input.entityId,
         before: input.before ? JSON.stringify(input.before) : null,
         after: (input.after ?? input.changes) ? JSON.stringify(input.after ?? input.changes) : null,
-        ip: input.ip,
+        ip: input.ip ?? input.ipAddress,
         userAgent: input.userAgent,
         requestId: input.requestId,
       },
