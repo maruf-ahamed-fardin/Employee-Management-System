@@ -61,7 +61,11 @@ export function LeaveClient({
   return (
     <div className="space-y-6">
       {/* Balances Tiles */}
-      <LeaveBalanceCards balances={initialBalances} />
+      <LeaveBalanceCards
+        balances={initialBalances}
+        canManage={canApprove}
+        onRefresh={() => window.location.reload()}
+      />
 
       {/* Action Header */}
       <div className="flex items-center justify-between">
