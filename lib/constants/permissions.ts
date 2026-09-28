@@ -1,0 +1,79 @@
+export const PERMISSIONS = {
+  // Employee
+  EMPLOYEE_VIEW: 'employee.view',
+  EMPLOYEE_CREATE: 'employee.create',
+  EMPLOYEE_EDIT: 'employee.edit',
+  EMPLOYEE_DELETE: 'employee.delete',
+  EMPLOYEE_VIEW_PRIVATE: 'employee.view_private',
+
+  // Department
+  DEPARTMENT_VIEW: 'department.view',
+  DEPARTMENT_MANAGE: 'department.manage',
+
+  // Attendance
+  ATTENDANCE_VIEW: 'attendance.view',
+  ATTENDANCE_MANAGE: 'attendance.manage',
+  ATTENDANCE_SELF: 'attendance.self',
+
+  // Leave
+  LEAVE_VIEW: 'leave.view',
+  LEAVE_REQUEST: 'leave.request',
+  LEAVE_APPROVE: 'leave.approve',
+  LEAVE_MANAGE_TYPES: 'leave.manage_types',
+
+  // Payroll
+  PAYROLL_VIEW: 'payroll.view',
+  PAYROLL_MANAGE: 'payroll.manage',
+
+  // Reports
+  REPORT_VIEW: 'report.view',
+  REPORT_EXPORT: 'report.export',
+
+  // Users & Settings
+  USER_MANAGE: 'user.manage',
+  SETTINGS_MANAGE: 'settings.manage',
+} as const;
+
+export type PermissionType = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+  superadmin: Object.values(PERMISSIONS),
+  admin: [
+    PERMISSIONS.EMPLOYEE_VIEW,
+    PERMISSIONS.EMPLOYEE_CREATE,
+    PERMISSIONS.EMPLOYEE_EDIT,
+    PERMISSIONS.EMPLOYEE_DELETE,
+    PERMISSIONS.EMPLOYEE_VIEW_PRIVATE,
+    PERMISSIONS.DEPARTMENT_VIEW,
+    PERMISSIONS.DEPARTMENT_MANAGE,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.ATTENDANCE_MANAGE,
+    PERMISSIONS.ATTENDANCE_SELF,
+    PERMISSIONS.LEAVE_VIEW,
+    PERMISSIONS.LEAVE_REQUEST,
+    PERMISSIONS.LEAVE_APPROVE,
+    PERMISSIONS.LEAVE_MANAGE_TYPES,
+    PERMISSIONS.PAYROLL_VIEW,
+    PERMISSIONS.PAYROLL_MANAGE,
+    PERMISSIONS.REPORT_VIEW,
+    PERMISSIONS.REPORT_EXPORT,
+    PERMISSIONS.USER_MANAGE,
+    PERMISSIONS.SETTINGS_MANAGE,
+  ],
+  manager: [
+    PERMISSIONS.EMPLOYEE_VIEW,
+    PERMISSIONS.DEPARTMENT_VIEW,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.ATTENDANCE_SELF,
+    PERMISSIONS.LEAVE_VIEW,
+    PERMISSIONS.LEAVE_REQUEST,
+    PERMISSIONS.LEAVE_APPROVE,
+    PERMISSIONS.PAYROLL_VIEW,
+    PERMISSIONS.REPORT_VIEW,
+  ],
+  employee: [
+    PERMISSIONS.EMPLOYEE_VIEW,
+    PERMISSIONS.ATTENDANCE_SELF,
+    PERMISSIONS.LEAVE_REQUEST,
+  ],
+};

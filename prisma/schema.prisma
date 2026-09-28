@@ -1,0 +1,231 @@
+// Prisma schema for SeloraX Employee Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  role             String    @default("employee") // superadmin, admin, manager, employee
+  employeeId       String?   @unique
+  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, LOCKED
+  lastLoginAt      DateTime?
+  failedLoginCount Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  employee      Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  notifications Notification[]
+}
+
+model Department {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  code           String   @unique
+  description    String?
+  headEmployeeId String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  employees Employee[]
+  positions Position[]
+}
+
+model Position {
+  id           String   @id @default(uuid())
+  title        String
+  departmentId String?
+  level        String?
+  baseSalary   Float    @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  employees  Employee[]
+}
+
+model Employee {
+  id               String    @id @default(uuid())
+  employeeCode     String    @unique
+  firstName        String
+  lastName         String
+  email            String    @unique
+  phone            String
+  dateOfBirth      String // YYYY-MM-DD
+  gender           String? // MALE, FEMALE, OTHER
+  address          String // JSON string: { line1, city, postcode, country }
+  emergencyContact String // JSON string: { name, relationship, phone }
+  photoUrl         String?
+  bloodGroup       String? // A+, A-, B+, B-, AB+, AB-, O+, O-
+  departmentId     String
+  positionId       String
+  managerId        String?
+  joiningDate      String // YYYY-MM-DD
+  employmentType   String    @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, INTERN
+  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, PROBATION
+  workLocation     String    @default("Dhaka, Bangladesh")
+  salary           Float     @default(50000)
+  headline         String?
+  businessPhone    String?
+  socialLinks      String? // JSON string: [{ kind, url }]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user           User?
+  department     Department       @relation(fields: [departmentId], references: [id])
+  position       Position         @relation(fields: [positionId], references: [id])
+  manager        Employee?        @relation("DirectReports", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports  Employee[]       @relation("DirectReports")
+  attendances    Attendance[]
+  leaveBalances  LeaveBalance[]
+  leaveRequests  LeaveRequest[]
+  payrollRecords PayrollRecord[]
+  documents      Document[]
+}
+
+model Attendance {
+  id            String   @id @default(uuid())
+  employeeId    String
+  workDate      String // YYYY-MM-DD
+  firstInAt     String? // ISO timestamp
+  lastOutAt     String? // ISO timestamp
+  workedMinutes Int      @default(0)
+  lateMinutes   Int      @default(0)
+  status        String   @default("PRESENT") // PRESENT, LATE, ABSENT, ON_LEAVE, WEEKEND, HOLIDAY
+  note          String?
+  sourceSummary String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  records  AttendanceRecord[]
+
+  @@unique([employeeId, workDate])
+}
+
+model AttendanceRecord {
+  id           String   @id @default(uuid())
+  attendanceId String
+  employeeId   String
+  type         String // CHECK_IN, CHECK_OUT
+  occurredAt   String // ISO timestamp
+  source       String   @default("WEB") // WEB, MOBILE, BIOMETRIC, RFID, ADMIN
+  ip           String?
+  createdAt    DateTime @default(now())
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+}
+
+model LeaveType {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  defaultDays Float    @default(14)
+  isPaid      Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  balances LeaveBalance[]
+  requests LeaveRequest[]
+}
+
+model LeaveBalance {
+  id          String   @id @default(uuid())
+  employeeId  String
+  leaveTypeId String
+  year        Int
+  allocated   Float    @default(0)
+  used        Float    @default(0)
+  pending     Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+model LeaveRequest {
+  id           String    @id @default(uuid())
+  employeeId   String
+  leaveTypeId  String
+  startDate    String // YYYY-MM-DD
+  endDate      String // YYYY-MM-DD
+  days         Float
+  reason       String
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+}
+
+model PayrollRecord {
+  id            String    @id @default(uuid())
+  employeeId    String
+  month         Int // 1 - 12
+  year          Int
+  basicSalary   Float
+  allowances    Float     @default(0)
+  deductions    Float     @default(0)
+  netSalary     Float
+  status        String    @default("PENDING") // PENDING, PROCESSING, PAID
+  paymentDate   String? // YYYY-MM-DD
+  paymentMethod String?   @default("BANK_TRANSFER") // BANK_TRANSFER, CASH, CHEQUE
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+}
+
+model Document {
+  id           String    @id @default(uuid())
+  employeeId   String
+  title        String
+  documentType String // NATIONAL_ID, PASSPORT, CONTRACT, CERTIFICATE, OTHER
+  storageUrl   String
+  mimeType     String
+  sizeBytes    Int
+  expiresAt    String? // YYYY-MM-DD
+  isSensitive  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ALERT
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  key       String   @id
+  value     String // JSON representation
+  updatedAt DateTime @updatedAt
+}
