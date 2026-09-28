@@ -8,6 +8,7 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@/compone
 import { Menu, Moon, Sun, Bell, LogOut, UserCircle, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { CommandSearch } from './CommandSearch';
 
 export function Header() {
   const { setMobileMenuOpen, theme, toggleTheme } = useUIStore();
@@ -28,6 +29,11 @@ export function Header() {
         <div className="hidden sm:block">
           <Breadcrumb />
         </div>
+      </div>
+
+      {/* Middle: Universal Search Bar */}
+      <div className="flex items-center gap-2">
+        <CommandSearch />
       </div>
 
       {/* Right Action Icons & User Menu */}
