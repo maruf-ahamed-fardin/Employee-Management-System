@@ -36,7 +36,7 @@ export function TeamProfileDirectory({
   const filtered = useMemo(() => {
     return initialPeople.filter((p) => {
       // Dept filter
-      if (selectedDept !== 'ALL' && p.departmentId !== selectedDept && p.department !== selectedDept) {
+      if (selectedDept !== 'ALL' && p.department !== selectedDept) {
         return false;
       }
       // Location filter
@@ -109,14 +109,14 @@ export function TeamProfileDirectory({
             All Teams ({initialPeople.length})
           </button>
           {departments.map((d) => {
-            const count = initialPeople.filter((p) => p.departmentId === d.id || p.department === d.name).length;
+            const count = initialPeople.filter((p) => p.department === d.name).length;
             if (count === 0) return null;
             return (
               <button
                 key={d.id}
-                onClick={() => setSelectedDept(d.id)}
+                onClick={() => setSelectedDept(d.name)}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                  selectedDept === d.id
+                  selectedDept === d.name
                     ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
                     : 'bg-secondary/70 text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}

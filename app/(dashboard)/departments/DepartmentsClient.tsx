@@ -58,7 +58,7 @@ export function DepartmentsClient({ initialDepartments = [] }: { initialDepartme
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {departments.map((dept) => (
-          <Card key={dept.id} className="hover:border-indigo-500/30 transition-all">
+          <Card key={dept.id} className="hover:border-indigo-500/30 transition-all group">
             <CardContent className="p-5 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="p-3 rounded-2xl bg-primary/10 text-primary">
@@ -80,22 +80,47 @@ export function DepartmentsClient({ initialDepartments = [] }: { initialDepartme
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
-                <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-                  <Users className="size-3.5" />
-                  {dept._count?.employees || 0} Staff Members
-                </span>
+              {/* Department Head */}
+              {dept.head && (
+                <div className="flex items-center gap-2 py-2 border-y border-slate-100 dark:border-slate-800">
+                  <div className="size-7 rounded-full bg-[#252175]/15 dark:bg-[#252175]/30 flex items-center justify-center text-xs font-bold text-[#252175] dark:text-[#F37021] shrink-0">
+                    {`${dept.head.firstName[0]}${dept.head.lastName[0]}`}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
+                      {dept.head.firstName} {dept.head.lastName}
+                    </p>
+                    <p className="text-[11px] text-slate-400 truncate">
+                      Head · {dept.head.position?.title || 'Manager'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-1 flex items-center justify-between text-xs text-slate-500">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                    <Users className="size-3.5" />
+                    {dept._count?.employees || 0} Staff
+                  </span>
+                  {dept._count?.positions != null && (
+                    <span className="text-slate-400">
+                      {dept._count.positions} positions
+                    </span>
+                  )}
+                </div>
                 <Link
                   href={`/departments/${dept.id}`}
-                  className="font-semibold text-xs text-primary hover:underline inline-flex items-center gap-1"
+                  className="font-semibold text-xs text-primary hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
                 >
-                  View Details →
+                  View →
                 </Link>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
 
       {/* Add Department Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>

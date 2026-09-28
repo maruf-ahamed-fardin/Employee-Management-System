@@ -1,13 +1,29 @@
-import { reportService } from '@/server/services/report.service';
+﻿import { reportService } from '@/server/services/report.service';
+import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileSpreadsheet, FileText, PieChart } from 'lucide-react';
+import { Download, FileSpreadsheet, BarChart3, Users, Clock, Calendar, TrendingUp, Building2 } from 'lucide-react';
+
+const REPORT_TYPES = [
+  { key: 'headcount', label: 'Headcount', icon: Users, description: 'Employee count by department & status' },
+  { key: 'attendance', label: 'Attendance', icon: Clock, description: 'Daily attendance logs and summaries' },
+  { key: 'leave', label: 'Leave', icon: Calendar, description: 'Leave requests, balances, and utilization' },
+  { key: 'turnover', label: 'Turnover', icon: TrendingUp, description: 'Hiring and attrition trends over time' },
+];
 
 export const metadata = {
   title: 'Reports & Analytics',
+  description: 'Organizational workforce reports and analytics.',
 };
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ report?: string }>;
+}) {
+  const raw = await searchParams;
+  const activeReport = raw.report ?? 'headcount';
+
   const [metrics, departmentStats] = await Promise.all([
     reportService.getDashboardMetrics(),
     reportService.getDepartmentStats(),
@@ -15,25 +31,80 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Organizational Reports & Exports
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Aggregated workforce distribution, attendance logs, and compensation summaries
-          </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-[#252175]/10 dark:bg-[#252175]/30">
+            <BarChart3 className="size-6 text-[#252175] dark:text-[#F37021]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#252175] dark:text-white">
+              Organizational Reports &amp; Exports
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Aggregated workforce distribution, attendance logs, and compensation summaries
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => {}}>
-            <FileSpreadsheet className="size-3.5 mr-1" />
-            Export CSV
+          <Button variant="outline" size="sm" asChild>
+            <a href="/api/reports?format=csv" download="selora-report.csv">
+              <FileSpreadsheet className="size-3.5 mr-1" />
+              Export CSV
+            </a>
           </Button>
-          <Button size="sm" onClick={() => {}}>
-            <Download className="size-3.5 mr-1" />
-            Download Summary
+          <Button size="sm" asChild>
+            <a href="/api/reports?format=xlsx" download="selora-report.xlsx">
+              <Download className="size-3.5 mr-1" />
+              Download Summary
+            </a>
           </Button>
         </div>
+      </div>
+
+      {/* Report Type Navigation */}
+      <nav aria-label="Report types" className="flex flex-wrap gap-2">
+        {REPORT_TYPES.map((r) => {
+          const Icon = r.icon;
+          const isActive = activeReport === r.key;
+          return (
+            <Link
+              key={r.key}
+              href={`/reports?report=${r.key}`}
+              aria-current={isActive ? 'page' : undefined}
+              className={`inline-flex items-center gap-2 h-9 rounded-full border px-3.5 text-sm font-medium transition-colors hover:bg-secondary ${
+                isActive
+                  ? 'border-[#252175]/30 bg-[#252175]/10 text-[#252175] dark:text-[#F37021] dark:bg-[#252175]/20'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Icon className="size-3.5" aria-hidden />
+              {r.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Employees', value: metrics.totalEmployees, icon: Users, color: 'text-[#252175]' },
+          { label: 'Active Employees', value: metrics.activeEmployees, icon: Building2, color: 'text-emerald-600' },
+          { label: 'Departments', value: departmentStats.length, icon: BarChart3, color: 'text-violet-600' },
+          { label: 'Pending Leaves', value: metrics.pendingLeaves, icon: Calendar, color: 'text-amber-600' },
+        ].map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <Card key={kpi.label} className="rounded-2xl shadow-sm">
+              <CardContent className="pt-5 pb-4 px-5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{kpi.label}</p>
+                  <Icon className={`size-4 ${kpi.color}`} aria-hidden />
+                </div>
+                <p className={`text-3xl font-black tabular-nums ${kpi.color}`}>{kpi.value.toLocaleString('en-US')}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Department Breakdown */}
@@ -58,6 +129,10 @@ export default async function ReportsPage() {
                     <div
                       className="h-full bg-gradient-to-r from-[#252175] to-[#f37021] dark:from-[#4f46e5] dark:to-[#f37021] rounded-full transition-all duration-500"
                       style={{ width: `${percent}%` }}
+                      role="progressbar"
+                      aria-valuenow={percent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
                     />
                   </div>
                 </div>
@@ -66,7 +141,6 @@ export default async function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* Presence & Compliance KPIs */}
         <Card>
           <CardHeader>
             <CardTitle>Workforce Operational KPIs</CardTitle>
@@ -91,6 +165,31 @@ export default async function ReportsPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Available Reports Grid */}
+      <div>
+        <h2 className="text-base font-semibold mb-3">Available Reports</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {REPORT_TYPES.map((r) => {
+            const Icon = r.icon;
+            return (
+              <Link
+                key={r.key}
+                href={`/reports?report=${r.key}`}
+                className="group rounded-2xl border bg-card p-5 shadow-sm hover:border-[#252175]/40 hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-xl bg-[#252175]/10 group-hover:bg-[#252175]/20 transition-colors">
+                    <Icon className="size-5 text-[#252175] dark:text-[#F37021]" aria-hidden />
+                  </div>
+                  <h3 className="font-semibold text-sm">{r.label} Report</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">{r.description}</p>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
