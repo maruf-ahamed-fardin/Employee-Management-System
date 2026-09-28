@@ -27,6 +27,36 @@ export function Dialog({
   );
 }
 
+export function DialogTrigger({
+  children,
+  asChild,
+  className,
+  ...props
+}: {
+  children: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
+  [key: string]: any;
+}) {
+  const context = React.useContext(DialogContext);
+  const handleClick = (e: React.MouseEvent) => {
+    props.onClick?.(e);
+    context?.onOpenChange(true);
+  };
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: handleClick,
+    });
+  }
+
+  return (
+    <button type="button" onClick={handleClick} className={className} {...props}>
+      {children}
+    </button>
+  );
+}
+
 export function DialogContent({
   children,
   className,
