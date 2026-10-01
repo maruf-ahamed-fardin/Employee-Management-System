@@ -175,6 +175,8 @@ model Employee {
   documents      Document[]
   teamProfile    TeamProfile?
   tasks          Task[]
+  expenseClaims  ExpenseClaim[]
+  assets         Asset[]
 }
 
 // ─── Team Profile (Digital Business Card / vCard / NFC) ───────────────────────
@@ -453,4 +455,57 @@ model Announcement {
   @@index([priority])
 }
 
+// ─── Expense & Reimbursement Claims ───────────────────────────────────────────
 
+model ExpenseClaim {
+  id           String    @id @default(uuid())
+  employeeId   String
+  category     String    // TRAVEL, MEALS, EQUIPMENT, TRAINING, MEDICAL, OTHER
+  title        String
+  amount       Float
+  currency     String    @default("BDT")
+  receiptUrl   String?
+  receiptName  String?
+  notes        String?
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+// ─── Company Assets & Hardware Inventory ──────────────────────────────────────
+
+model Asset {
+  id             String    @id @default(uuid())
+  assetTag       String    @unique // e.g. AST-LPT-001, AST-MON-014
+  name           String    // e.g. MacBook Pro 16" M2 Max, Dell UltraSharp 27" 4K
+  category       String    @default("LAPTOP") // LAPTOP, DESKTOP, MONITOR, MOBILE, PERIPHERAL, FURNITURE, OTHER
+  model          String?   // e.g. Apple M2 Max 32GB / 1TB, Dell U2723QE
+  serialNumber   String?   @unique
+  purchaseDate   String?   // YYYY-MM-DD
+  purchaseCost   Float?    @default(0)
+  currency       String    @default("BDT")
+  warrantyExpiry String?   // YYYY-MM-DD
+  condition      String    @default("GOOD") // NEW, GOOD, FAIR, DAMAGED
+  status         String    @default("AVAILABLE") // AVAILABLE, ASSIGNED, MAINTENANCE, RETIRED
+  assignedToId   String?
+  assignedAt     DateTime?
+  location       String?   @default("HQ - Dhaka Office")
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  assignedTo Employee? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([status])
+  @@index([assignedToId])
+}

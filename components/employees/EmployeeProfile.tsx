@@ -22,6 +22,8 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  Laptop,
+  ChevronRight,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +34,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AssignTaskModal } from '@/components/employees/AssignTaskModal';
 import { toast } from 'sonner';
 
-export function EmployeeProfile({ employee }: { employee: any }) {
+export function EmployeeProfile({
+  employee,
+  assets = [],
+}: {
+  employee: any;
+  assets?: any[];
+}) {
   const [qrOpen, setQrOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [tasks, setTasks] = useState<any[]>(employee.tasks || []);
@@ -371,6 +379,61 @@ export function EmployeeProfile({ employee }: { employee: any }) {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Assigned Hardware & Assets */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Laptop className="size-4 text-indigo-500" />
+                  <span>Assigned Hardware & Assets ({assets.length})</span>
+                </CardTitle>
+              </div>
+              <Link
+                href="/assets"
+                className="text-xs text-indigo-500 hover:text-indigo-400 font-medium flex items-center gap-1"
+              >
+                <span>Inventory Hub</span>
+                <ChevronRight className="size-3" />
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {assets.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No company hardware or devices currently issued to this employee.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {assets.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col justify-between"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-semibold text-xs text-slate-900 dark:text-white">
+                            {item.name}
+                          </div>
+                          {item.model && (
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {item.model}
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
+                          {item.assetTag}
+                        </span>
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+                        <span className="font-mono">SN: {item.serialNumber || 'N/A'}</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.condition}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
