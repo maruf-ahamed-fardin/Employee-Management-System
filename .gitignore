@@ -22,8 +22,9 @@
 .env
 
 # Prisma
-dev.db
-dev.db-journal
+*.db-journal
+*.db-shm
+*.db-wal
 
 # Vercel
 .vercel
