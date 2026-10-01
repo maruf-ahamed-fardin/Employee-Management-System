@@ -14,6 +14,7 @@ import {
   Play,
   Pause,
   SunMedium,
+  Moon,
   Check,
   RotateCcw,
 } from 'lucide-react';
@@ -22,15 +23,69 @@ import { formatTime, formatDuration } from '@/lib/utils/date';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/format';
 
+export type ShiftType = 'DAY' | 'NIGHT';
+
+interface ShiftConfig {
+  type: ShiftType;
+  title: string;
+  shortLabel: string;
+  timeRange: string;
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
+  graceMinutes: number;
+  breakTitle: string;
+  breakTimeRange: string;
+  breakStartHour: number;
+  breakEndHour: number;
+  badgeTone: string;
+}
+
+const SHIFT_CONFIGS: Record<ShiftType, ShiftConfig> = {
+  DAY: {
+    type: 'DAY',
+    title: 'Standard Day Shift',
+    shortLabel: 'Day Shift',
+    timeRange: '09:00 AM – 05:00 PM',
+    startHour: 9,
+    startMinute: 0,
+    endHour: 17,
+    endMinute: 0,
+    graceMinutes: 15,
+    breakTitle: 'Lunch & Prayer (Zohr) Break',
+    breakTimeRange: '01:00 PM – 02:00 PM',
+    breakStartHour: 13,
+    breakEndHour: 14,
+    badgeTone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+  },
+  NIGHT: {
+    type: 'NIGHT',
+    title: 'Overnight Operations Shift',
+    shortLabel: 'Night Shift',
+    timeRange: '09:00 PM – 05:00 AM',
+    startHour: 21,
+    startMinute: 0,
+    endHour: 5,
+    endMinute: 0,
+    graceMinutes: 15,
+    breakTitle: 'Midnight Meal & Prayer (Isha/Tahajjud)',
+    breakTimeRange: '01:00 AM – 02:00 AM',
+    breakStartHour: 1,
+    breakEndHour: 2,
+    badgeTone: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+  },
+};
+
+const COFFEE_BREAK_MAX = 2;
+const COFFEE_BREAK_MINUTES = 15;
+
 export interface LivePunchTerminalProps {
   initialAttendance?: any;
   onRefresh?: () => void;
   userRole?: string;
   employeeName?: string;
 }
-
-const COFFEE_BREAK_MAX = 2;
-const COFFEE_BREAK_MINUTES = 15;
 
 export function LivePunchTerminal({
   initialAttendance,
@@ -41,28 +96,53 @@ export function LivePunchTerminal({
   const [punching, setPunching] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
+  // Day & Night Shift State (Defaults auto-based on local hour)
+  const [selectedShift, setSelectedShift] = useState<ShiftType>('DAY');
+
   // Flexible Coffee Break State (15m x 2 times a day)
   const [coffeeBreaksUsed, setCoffeeBreaksUsed] = useState<number>(0);
   const [isCoffeeBreakActive, setIsCoffeeBreakActive] = useState<boolean>(false);
   const [coffeeSecondsLeft, setCoffeeSecondsLeft] = useState<number>(COFFEE_BREAK_MINUTES * 60);
 
-  // Auto/Fixed Lunch & Prayer State (1:00 PM – 2:00 PM)
+  // Clock tick
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   const hasCheckedIn = Boolean(attendance?.firstInAt);
   const hasCheckedOut = Boolean(attendance?.lastOutAt);
 
-  // Initialize and persist coffee breaks in localStorage by today's date
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const currentShiftConfig = SHIFT_CONFIGS[selectedShift];
 
+  // Auto detect initial shift or restore saved preference
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(`selorax_coffee_${todayStr}`);
-      if (stored) {
-        setCoffeeBreaksUsed(Math.min(COFFEE_BREAK_MAX, parseInt(stored, 10) || 0));
+      const savedShift = localStorage.getItem('selorax_active_shift') as ShiftType;
+      if (savedShift && (savedShift === 'DAY' || savedShift === 'NIGHT')) {
+        setSelectedShift(savedShift);
+      } else {
+        const curH = new Date().getHours();
+        // Day shift: 8:00 AM - 7:59 PM; Night shift: 8:00 PM - 7:59 AM
+        setSelectedShift(curH >= 8 && curH < 20 ? 'DAY' : 'NIGHT');
+      }
+
+      const storedCoffee = localStorage.getItem(`selorax_coffee_${todayStr}`);
+      if (storedCoffee) {
+        setCoffeeBreaksUsed(Math.min(COFFEE_BREAK_MAX, parseInt(storedCoffee, 10) || 0));
       }
     } catch {}
   }, [todayStr]);
+
+  const handleShiftChange = (shift: ShiftType) => {
+    setSelectedShift(shift);
+    try {
+      localStorage.setItem('selorax_active_shift', shift);
+    } catch {}
+    toast.info(
+      shift === 'DAY'
+        ? 'Switched to Standard Day Shift (09:00 AM – 05:00 PM) ☀️'
+        : 'Switched to Overnight Operations Shift (09:00 PM – 05:00 AM) 🌙'
+    );
+  };
 
   // Sync state if initialAttendance changes
   useEffect(() => {
@@ -77,42 +157,47 @@ export function LivePunchTerminal({
     return () => clearInterval(timer);
   }, []);
 
-  // Check if current time is within Fixed Lunch & Prayer window (13:00 – 14:00)
-  const lunchPrayerStatus = useMemo(() => {
+  // Check if current time is within Shift's Fixed Break Window
+  const fixedBreakStatus = useMemo(() => {
     const hours = currentTime.getHours();
     const minutes = currentTime.getMinutes();
     const currentMins = hours * 60 + minutes;
 
-    const startMins = 13 * 60; // 01:00 PM
-    const endMins = 14 * 60; // 02:00 PM
+    const startMins = currentShiftConfig.breakStartHour * 60;
+    const endMins = currentShiftConfig.breakEndHour * 60;
 
-    if (currentMins >= startMins && currentMins < endMins) {
-      const remainingMins = endMins - currentMins;
+    const isActive =
+      currentShiftConfig.breakStartHour < currentShiftConfig.breakEndHour
+        ? currentMins >= startMins && currentMins < endMins
+        : currentMins >= startMins || currentMins < endMins;
+
+    if (isActive) {
       return {
         status: 'ACTIVE',
-        label: 'Lunch & Prayer Break Active',
-        detail: `Auto break in progress (${remainingMins}m remaining until 02:00 PM)`,
+        label: `${selectedShift === 'DAY' ? 'Lunch & Prayer' : 'Midnight Meal & Prayer'} Break Active`,
+        detail: `Auto scheduled break in progress (${currentShiftConfig.breakTimeRange})`,
         badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 animate-pulse',
       };
-    } else if (currentMins < startMins) {
-      const minsUntil = startMins - currentMins;
-      const hoursUntil = Math.floor(minsUntil / 60);
-      const mUntil = minsUntil % 60;
+    } else if (
+      selectedShift === 'DAY'
+        ? currentMins < startMins
+        : currentMins < startMins && currentMins >= 21 * 60
+    ) {
       return {
         status: 'UPCOMING',
-        label: 'Fixed Lunch & Prayer Break',
-        detail: `Scheduled: 01:00 PM – 02:00 PM (in ${hoursUntil > 0 ? `${hoursUntil}h ` : ''}${mUntil}m)`,
+        label: `Scheduled ${selectedShift === 'DAY' ? 'Lunch & Prayer' : 'Midnight Break'}`,
+        detail: `Slot: ${currentShiftConfig.breakTimeRange}`,
         badgeClass: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
       };
     } else {
       return {
         status: 'COMPLETED',
-        label: 'Lunch & Prayer Completed',
-        detail: 'Fixed break (01:00 PM – 02:00 PM) recorded',
+        label: `${selectedShift === 'DAY' ? 'Lunch & Prayer' : 'Midnight Break'} Recorded`,
+        detail: `Fixed 1h break (${currentShiftConfig.breakTimeRange}) slot`,
         badgeClass: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
       };
     }
-  }, [currentTime]);
+  }, [currentTime, currentShiftConfig, selectedShift]);
 
   // Coffee break countdown timer
   useEffect(() => {
@@ -170,8 +255,8 @@ export function LivePunchTerminal({
         const now = new Date().toISOString();
         toast.success(
           type === 'CHECK_IN'
-            ? 'Checked in successfully! Workday started.'
-            : 'Checked out successfully! Have a restful evening.'
+            ? `Checked in successfully! ${currentShiftConfig.shortLabel} started.`
+            : 'Checked out successfully! Have a restful time.'
         );
         setAttendance((prev: any) => ({
           ...prev,
@@ -232,13 +317,20 @@ export function LivePunchTerminal({
   const shiftTargetSeconds = 8 * 3600;
   const shiftPercent = Math.min(100, Math.round((elapsedSeconds / shiftTargetSeconds) * 100));
 
-  // Punctuality check
+  // Punctuality check based on selected shift
   let punctualityBadge = null;
   if (attendance?.firstInAt) {
     const inDate = new Date(attendance.firstInAt);
     const inHour = inDate.getHours();
     const inMin = inDate.getMinutes();
-    const isLate = inHour > 9 || (inHour === 9 && inMin > 15);
+
+    let isLate = false;
+    if (selectedShift === 'DAY') {
+      isLate = inHour > 9 || (inHour === 9 && inMin > 15);
+    } else {
+      // Night shift: 9:00 PM (21:00), grace till 21:15
+      isLate = inHour > 21 || (inHour === 21 && inMin > 15);
+    }
 
     if (isLate) {
       punctualityBadge = {
@@ -253,23 +345,56 @@ export function LivePunchTerminal({
     }
   }
 
-  const isAnyBreakActive = isCoffeeBreakActive || lunchPrayerStatus.status === 'ACTIVE';
+  const isAnyBreakActive = isCoffeeBreakActive || fixedBreakStatus.status === 'ACTIVE';
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-gradient-to-br from-white via-slate-50 to-indigo-50/20 dark:from-[#0b101d] dark:via-[#0e1628] dark:to-[#141b30] p-6 lg:p-7 shadow-xl shadow-slate-950/5 space-y-6">
       {/* Background Ambient Glows */}
-      <div className="absolute -top-16 -right-16 size-64 rounded-full bg-[#F37021]/10 dark:bg-[#F37021]/15 blur-3xl pointer-events-none" />
+      <div
+        className={cn(
+          'absolute -top-16 -right-16 size-64 rounded-full blur-3xl pointer-events-none transition-colors duration-700',
+          selectedShift === 'DAY'
+            ? 'bg-[#F37021]/10 dark:bg-[#F37021]/15'
+            : 'bg-indigo-600/15 dark:bg-indigo-500/20'
+        )}
+      />
       <div className="absolute -bottom-16 -left-16 size-64 rounded-full bg-indigo-500/10 dark:bg-indigo-500/15 blur-3xl pointer-events-none" />
 
-      {/* ─── SECTION 1: MAIN TERMINAL ROW (Timer & Punch Actions) ─────────────── */}
+      {/* ─── SECTION 1: MAIN TERMINAL ROW (Shift Toggle, Timer & Punch Actions) ─ */}
       <div className="relative z-10 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-6">
-        {/* Left: Shift Details & Status */}
-        <div className="space-y-2.5 max-w-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              <Calendar className="size-3 text-[#F37021]" />
-              Standard Shift (09:00 AM – 05:00 PM)
-            </span>
+        {/* Left: Shift Details & Day/Night Toggle */}
+        <div className="space-y-3 max-w-md">
+          {/* Day & Night Shift Switcher Pill */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-[#070b14] border border-slate-200 dark:border-slate-800 shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleShiftChange('DAY')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none active:scale-95',
+                  selectedShift === 'DAY'
+                    ? 'bg-gradient-to-r from-amber-500 to-[#F37021] text-white shadow-md shadow-orange-500/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                )}
+              >
+                <SunMedium className="size-3.5" />
+                <span>Day (09 AM – 05 PM)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleShiftChange('NIGHT')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none active:scale-95',
+                  selectedShift === 'NIGHT'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                )}
+              >
+                <Moon className="size-3.5" />
+                <span>Night (09 PM – 05 AM)</span>
+              </button>
+            </div>
 
             {punctualityBadge && (
               <span
@@ -283,14 +408,20 @@ export function LivePunchTerminal({
             )}
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <span>Executive Time Terminal</span>
-            <span className="size-2.5 rounded-full bg-[#F37021] animate-pulse" />
-          </h2>
-
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Biometric presence tracking with automatic lunch/prayer breaks and flexible coffee allowances.
-          </p>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <span>{currentShiftConfig.title}</span>
+              <span
+                className={cn(
+                  'size-2.5 rounded-full animate-pulse',
+                  selectedShift === 'DAY' ? 'bg-[#F37021]' : 'bg-indigo-400'
+                )}
+              />
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Biometric time terminal with automatic {selectedShift === 'DAY' ? 'lunch/prayer' : 'midnight meal/prayer'} breaks and dual-shift rosters.
+            </p>
+          </div>
         </div>
 
         {/* Center: Digital Stopwatch & Progress Meter */}
@@ -310,12 +441,12 @@ export function LivePunchTerminal({
                 )}
               />
               {hasCheckedOut
-                ? 'Workday Completed'
+                ? `${currentShiftConfig.shortLabel} Completed`
                 : hasCheckedIn
                 ? isCoffeeBreakActive
                   ? 'Coffee Break (15m) Active ☕'
-                  : lunchPrayerStatus.status === 'ACTIVE'
-                  ? 'Lunch & Prayer Break Active 🕌'
+                  : fixedBreakStatus.status === 'ACTIVE'
+                  ? `${selectedShift === 'DAY' ? 'Lunch & Prayer' : 'Midnight Break'} Active`
                   : 'Active Session Live'
                 : 'Not Clocked In'}
             </span>
@@ -325,10 +456,31 @@ export function LivePunchTerminal({
           {/* Large Live Digital Ticker */}
           <div className="font-mono text-3xl sm:text-4xl lg:text-5xl font-black tracking-wider text-slate-900 dark:text-white py-1.5">
             <span className="inline-block min-w-[2ch]">{pad(hours)}</span>
-            <span className="text-[#F37021] animate-pulse mx-1">:</span>
+            <span
+              className={cn(
+                'animate-pulse mx-1',
+                selectedShift === 'DAY' ? 'text-[#F37021]' : 'text-indigo-400'
+              )}
+            >
+              :
+            </span>
             <span className="inline-block min-w-[2ch]">{pad(minutes)}</span>
-            <span className="text-[#F37021] animate-pulse mx-1">:</span>
-            <span className="inline-block min-w-[2ch] text-[#F37021]">{pad(seconds)}</span>
+            <span
+              className={cn(
+                'animate-pulse mx-1',
+                selectedShift === 'DAY' ? 'text-[#F37021]' : 'text-indigo-400'
+              )}
+            >
+              :
+            </span>
+            <span
+              className={cn(
+                'inline-block min-w-[2ch]',
+                selectedShift === 'DAY' ? 'text-[#F37021]' : 'text-indigo-400'
+              )}
+            >
+              {pad(seconds)}
+            </span>
           </div>
 
           {/* Visual Shift Progress Bar */}
@@ -340,16 +492,18 @@ export function LivePunchTerminal({
                   ? 'bg-slate-500'
                   : isAnyBreakActive
                   ? 'bg-amber-500'
-                  : 'bg-gradient-to-r from-emerald-500 via-[#818cf8] to-[#F37021]'
+                  : selectedShift === 'DAY'
+                  ? 'bg-gradient-to-r from-emerald-500 via-[#818cf8] to-[#F37021]'
+                  : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400'
               )}
               style={{ width: `${Math.max(shiftPercent, 4)}%` }}
             />
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 mt-2 px-1 font-mono">
-            <span>09:00 AM Start</span>
-            <span>8h Shift Goal</span>
-            <span>05:00 PM End</span>
+            <span>{currentShiftConfig.timeRange.split('–')[0]?.trim()} Start</span>
+            <span>8h Target</span>
+            <span>{currentShiftConfig.timeRange.split('–')[1]?.trim()} End</span>
           </div>
         </div>
 
@@ -391,10 +545,15 @@ export function LivePunchTerminal({
                 type="button"
                 onClick={() => handlePunch('CHECK_IN')}
                 disabled={punching}
-                className="w-full h-12 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                className={cn(
+                  'w-full h-12 px-6 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50',
+                  selectedShift === 'DAY'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/25'
+                    : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 shadow-indigo-600/25'
+                )}
               >
                 <LogIn className="size-4.5" />
-                <span>{punching ? 'Recording Punch...' : 'Clock In Now'}</span>
+                <span>{punching ? 'Recording Punch...' : `Clock In (${currentShiftConfig.shortLabel})`}</span>
               </button>
             ) : !hasCheckedOut ? (
               <button
@@ -404,46 +563,57 @@ export function LivePunchTerminal({
                 className="w-full h-12 px-6 rounded-2xl bg-gradient-to-r from-[#F37021] to-rose-600 hover:from-[#ff8838] hover:to-rose-500 text-white font-bold text-sm shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <LogOut className="size-4.5" />
-                <span>{punching ? 'Recording...' : 'Clock Out (Finish Workday)'}</span>
+                <span>{punching ? 'Recording...' : `Clock Out (${currentShiftConfig.shortLabel})`}</span>
               </button>
             ) : (
               <div className="w-full h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-sm flex items-center justify-center gap-2 shadow-sm">
                 <CheckCircle2 className="size-5" />
-                <span>Shift Fully Completed</span>
+                <span>{currentShiftConfig.shortLabel} Fully Completed</span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ─── SECTION 2: BREAK MANAGEMENT (Fixed Lunch/Prayer & Flexible Coffee) ─ */}
+      {/* ─── SECTION 2: BREAK MANAGEMENT (Fixed Shift Break & Flexible Coffee) ─ */}
       <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card A: Auto & Fixed Lunch & Prayer (Namaj) Break (01:00 PM – 02:00 PM) */}
+          {/* Card A: Auto & Fixed Shift Break */}
           <div
             className={cn(
               'relative overflow-hidden rounded-2xl border p-4 transition-all duration-300',
-              lunchPrayerStatus.status === 'ACTIVE'
+              fixedBreakStatus.status === 'ACTIVE'
                 ? 'bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-500/40 ring-2 ring-emerald-500/20'
                 : 'bg-white/70 dark:bg-[#070b14]/70 border-slate-200/80 dark:border-slate-800'
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="size-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
-                  <SunMedium className="size-5" />
+                <div
+                  className={cn(
+                    'size-10 rounded-xl flex items-center justify-center shrink-0 border',
+                    selectedShift === 'DAY'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                  )}
+                >
+                  {selectedShift === 'DAY' ? (
+                    <SunMedium className="size-5" />
+                  ) : (
+                    <Moon className="size-5" />
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Lunch & Prayer (Zohr) Break
+                      {currentShiftConfig.breakTitle}
                     </h4>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                       Auto · Fixed 60m
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Fixed official window: <strong>01:00 PM – 02:00 PM</strong>
+                    Official slot: <strong>{currentShiftConfig.breakTimeRange}</strong>
                   </p>
                 </div>
               </div>
@@ -451,15 +621,15 @@ export function LivePunchTerminal({
               <span
                 className={cn(
                   'px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0',
-                  lunchPrayerStatus.badgeClass
+                  fixedBreakStatus.badgeClass
                 )}
               >
-                {lunchPrayerStatus.label}
+                {fixedBreakStatus.label}
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-              <span className="font-medium">{lunchPrayerStatus.detail}</span>
+              <span className="font-medium">{fixedBreakStatus.detail}</span>
               <span className="text-[11px] font-mono font-semibold text-slate-500">
                 1h 00m Standard Slot
               </span>
