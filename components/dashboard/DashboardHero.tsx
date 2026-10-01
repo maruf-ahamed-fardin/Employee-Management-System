@@ -139,54 +139,56 @@ export function DashboardHero({
         </div>
 
         {/* Right: Quick Action Dock */}
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 lg:pt-0">
-          {/* Quick Punch Button */}
-          <button
-            onClick={handleQuickPunch}
-            disabled={punching}
-            className={`group flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl border font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer ${
-              isCheckedIn
-                ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
-                : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 shadow-emerald-500/10'
-            }`}
-          >
-            <Clock className={`size-4 ${punching ? 'animate-spin' : ''}`} />
-            <span>{punching ? 'Recording...' : isCheckedIn ? 'Clock Out' : 'Clock In Now'}</span>
-          </button>
-
-          {/* 1-Click Action Buttons */}
-          <div className="grid grid-cols-2 sm:flex items-center gap-2">
+        <div className="w-full xl:w-auto pt-2 xl:pt-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+            {/* Quick Punch Button */}
             <button
-              onClick={() => setLeaveModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-semibold transition-all hover:border-slate-600 hover:text-white cursor-pointer active:scale-95"
+              onClick={handleQuickPunch}
+              disabled={punching}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 h-10 rounded-xl border font-bold text-xs whitespace-nowrap transition-all shadow-md active:scale-95 cursor-pointer shrink-0 ${
+                isCheckedIn
+                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
+                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 shadow-emerald-500/10'
+              }`}
             >
-              <CalendarPlus className="size-3.5 text-indigo-400" />
-              <span>Apply Leave</span>
+              <Clock className={`size-4 ${punching ? 'animate-spin' : ''}`} />
+              <span>{punching ? 'Recording...' : isCheckedIn ? 'Clock Out' : 'Clock In Now'}</span>
             </button>
 
-            <button
-              onClick={() => setExpenseModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-semibold transition-all hover:border-slate-600 hover:text-white cursor-pointer active:scale-95"
-            >
-              <Receipt className="size-3.5 text-emerald-400" />
-              <span>Claim Expense</span>
-            </button>
+            {/* 1-Click Action Buttons */}
+            <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setLeaveModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-3 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-semibold whitespace-nowrap transition-all hover:border-slate-600 hover:text-white cursor-pointer active:scale-95"
+              >
+                <CalendarPlus className="size-3.5 text-indigo-400" />
+                <span>Apply Leave</span>
+              </button>
 
-            <button
-              onClick={() => setTaskModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-semibold transition-all hover:border-slate-600 hover:text-white cursor-pointer active:scale-95"
-            >
-              <CheckSquare className="size-3.5 text-sky-400" />
-              <span>Assign Task</span>
-            </button>
+              <button
+                onClick={() => setExpenseModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-3 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-semibold whitespace-nowrap transition-all hover:border-slate-600 hover:text-white cursor-pointer active:scale-95"
+              >
+                <Receipt className="size-3.5 text-emerald-400" />
+                <span>Claim Expense</span>
+              </button>
 
-            <Link
-              href="/payroll"
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/25 active:scale-95"
-            >
-              <CreditCard className="size-3.5" />
-              <span>My Payslip</span>
-            </Link>
+              <button
+                onClick={() => setTaskModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-3 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-semibold whitespace-nowrap transition-all hover:border-slate-600 hover:text-white cursor-pointer active:scale-95"
+              >
+                <CheckSquare className="size-3.5 text-sky-400" />
+                <span>Assign Task</span>
+              </button>
+
+              <Link
+                href="/payroll"
+                className="flex items-center justify-center gap-1.5 px-3.5 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white text-xs font-bold whitespace-nowrap transition-all shadow-md shadow-indigo-600/25 active:scale-95 text-center"
+              >
+                <CreditCard className="size-3.5" />
+                <span>My Payslip</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

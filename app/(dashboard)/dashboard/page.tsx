@@ -6,7 +6,6 @@ import { EmployeeOverview } from '@/components/dashboard/EmployeeOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { CompanyNoticeBoard } from '@/components/dashboard/CompanyNoticeBoard';
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
-import { CelebrationsWidget } from '@/components/dashboard/CelebrationsWidget';
 
 export const metadata = {
   title: 'Dashboard | SeloraX EMS',
@@ -57,11 +56,8 @@ export default async function DashboardPage() {
         attendanceRate={metrics.attendance.attendanceRate}
       />
 
-      {/* Company Notice Board & Peer Recognition Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <CompanyNoticeBoard />
-        <CelebrationsWidget employees={employees} />
-      </div>
+      {/* Company Notice Board & Corporate Pulse Hub */}
+      <CompanyNoticeBoard employees={employees} />
 
       {/* Analytics Charts & Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
