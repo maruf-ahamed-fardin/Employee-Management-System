@@ -98,30 +98,40 @@ export function EmployeeTable({ employees = [], onDelete, onAssignTask }: Employ
                     )}
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        activeTasks.length === 0
-                          ? 'bg-emerald-500/10 text-emerald-600'
-                          : activeTasks.length <= 2
-                          ? 'bg-blue-500/10 text-blue-600'
-                          : 'bg-amber-500/10 text-amber-600'
-                      }`}
-                    >
-                      <span
-                        className={`size-1.5 rounded-full ${
-                          activeTasks.length === 0
-                            ? 'bg-emerald-500'
-                            : activeTasks.length <= 2
-                            ? 'bg-blue-500'
-                            : 'bg-amber-500'
-                        }`}
-                      />
-                      {activeTasks.length === 0
-                        ? 'Available'
-                        : activeTasks.length <= 2
-                        ? 'Light Load'
-                        : 'Active Load'}
-                    </span>
+                    <div className="w-28 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span
+                          className={`font-semibold ${
+                            activeTasks.length === 0
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : activeTasks.length <= 2
+                              ? 'text-sky-600 dark:text-sky-400'
+                              : 'text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {activeTasks.length === 0
+                            ? 'Available'
+                            : `${activeTasks.length} active`}
+                        </span>
+                        <span className="font-mono text-muted-foreground font-bold">
+                          {Math.min(100, Math.round((activeTasks.length / 5) * 100))}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-secondary/80 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            activeTasks.length === 0
+                              ? 'bg-emerald-500'
+                              : activeTasks.length <= 2
+                              ? 'bg-sky-500'
+                              : 'bg-amber-500'
+                          }`}
+                          style={{
+                            width: `${Math.max(8, Math.min(100, Math.round((activeTasks.length / 5) * 100)))}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={emp.status === 'ACTIVE' ? 'success' : 'secondary'}>

@@ -99,6 +99,15 @@ export function EmployeeCard({ employee, onAssignTask, onTaskStatusChange }: Emp
   };
 
   const workload = getWorkloadStatus();
+  const capacityPercent = Math.min(100, Math.round((activeTasks.length / 5) * 100));
+  const capacityColor =
+    capacityPercent === 0
+      ? 'from-emerald-500 to-teal-400'
+      : capacityPercent <= 40
+      ? 'from-sky-500 to-indigo-500'
+      : capacityPercent <= 80
+      ? 'from-amber-500 to-orange-400'
+      : 'from-rose-500 to-red-500';
 
   // Toggle task status
   const handleToggleTaskStatus = async (task: TaskItem) => {
@@ -164,7 +173,7 @@ export function EmployeeCard({ employee, onAssignTask, onTaskStatusChange }: Emp
   };
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:border-primary/40">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/40">
       {/* Header Bar with Code & Workload Badge */}
       <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3.5">
         <span className="font-mono text-xs font-bold text-muted-foreground bg-secondary/80 px-2 py-0.5 rounded-md">
@@ -182,12 +191,15 @@ export function EmployeeCard({ employee, onAssignTask, onTaskStatusChange }: Emp
 
       {/* Employee Profile Identity */}
       <div className="mt-4 flex items-center gap-3.5">
-        <Avatar className="size-12 ring-2 ring-primary/20 bg-card">
-          {employee.photoUrl && <AvatarImage src={employee.photoUrl} alt={fullName} />}
-          <AvatarFallback className="bg-[#252175] text-[#F37021] font-bold text-sm">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="size-12 ring-2 ring-primary/20 bg-card">
+            {employee.photoUrl && <AvatarImage src={employee.photoUrl} alt={fullName} />}
+            <AvatarFallback className="bg-[#252175] text-[#F37021] font-bold text-sm">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" title="Active on duty" />
+        </div>
 
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
@@ -205,12 +217,26 @@ export function EmployeeCard({ employee, onAssignTask, onTaskStatusChange }: Emp
         </div>
       </div>
 
+      {/* Visual Workload Capacity Gauge */}
+      <div className="mt-3.5 pt-2.5 border-t border-border/50">
+        <div className="flex items-center justify-between text-[11px] mb-1.5">
+          <span className="text-muted-foreground font-medium">Workload Meter</span>
+          <span className="font-mono font-bold text-foreground">{capacityPercent}% capacity</span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-secondary/80 overflow-hidden">
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${capacityColor} transition-all duration-500`}
+            style={{ width: `${Math.max(5, capacityPercent)}%` }}
+          />
+        </div>
+      </div>
+
       {/* Assigned Tasks Section */}
-      <div className="mt-4 flex-1 rounded-xl border border-border/60 bg-secondary/20 p-3 flex flex-col">
+      <div className="mt-3.5 flex-1 rounded-xl border border-border/60 bg-secondary/20 p-3 flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
             <CheckSquare className="size-3.5 text-primary" />
-            <span>Assigned Work ({localTasks.length})</span>
+            <span>Assigned Tasks ({localTasks.length})</span>
           </div>
           {completedCount > 0 && (
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
