@@ -43,6 +43,9 @@ export default async function EmployeeDetailPage({
       department: true,
       position: true,
       manager: true,
+      tasks: {
+        orderBy: { createdAt: 'desc' },
+      },
       directReports: {
         include: { position: true },
       },

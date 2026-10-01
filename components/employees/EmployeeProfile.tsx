@@ -17,6 +17,11 @@ import {
   QrCode as QrIcon,
   Download,
   Share2,
+  CheckSquare,
+  Plus,
+  CheckCircle2,
+  Circle,
+  Clock,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +29,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatDate, formatCurrency } from '@/lib/utils/date';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AssignTaskModal } from '@/components/employees/AssignTaskModal';
 import { toast } from 'sonner';
 
 export function EmployeeProfile({ employee }: { employee: any }) {
   const [qrOpen, setQrOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [tasks, setTasks] = useState<any[]>(employee.tasks || []);
   const fullName = `${employee.firstName} ${employee.lastName}`;
   const initials = `${employee.firstName[0] || ''}${employee.lastName[0] || ''}`.toUpperCase();
 
@@ -270,6 +278,104 @@ export function EmployeeProfile({ employee }: { employee: any }) {
             </CardContent>
           </Card>
 
+          {/* Assigned Work & Tasks Card */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckSquare className="size-4 text-primary" />
+                  <span>Assigned Tasks & Workload ({tasks.length})</span>
+                </CardTitle>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setAssignOpen(true)}
+                className="h-8 gap-1.5 text-xs font-semibold"
+              >
+                <Plus className="size-3.5" />
+                <span>Assign Task</span>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {tasks.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No active tasks assigned to this employee.
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {tasks.map((task) => {
+                    const isDone = task.status === 'DONE';
+                    return (
+                      <div
+                        key={task.id}
+                        className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs transition-all ${
+                          isDone
+                            ? 'border-border/40 bg-card/40 opacity-60'
+                            : 'border-border bg-card shadow-2xs hover:border-primary/30'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextStatus = isDone ? 'IN_PROGRESS' : 'DONE';
+                            setTasks((prev) =>
+                              prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
+                            );
+                            fetch(`/api/tasks/${task.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: nextStatus }),
+                            }).then((r) => r.json()).then((d) => {
+                              if (d.success) toast.success(`Task status updated`);
+                            });
+                          }}
+                          className="mt-0.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
+                          title={isDone ? 'Mark as In Progress' : 'Mark as Done'}
+                        >
+                          {isDone ? (
+                            <CheckCircle2 className="size-4 text-emerald-600" />
+                          ) : (
+                            <Circle className="size-4" />
+                          )}
+                        </button>
+
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`font-semibold ${
+                              isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                            }`}
+                          >
+                            {task.title}
+                          </p>
+                          {task.description && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px]">
+                            <span className="rounded px-1.5 py-0.5 font-bold uppercase bg-primary/10 text-primary">
+                              {task.priority}
+                            </span>
+                            {task.category && (
+                              <span className="text-muted-foreground font-mono">#{task.category}</span>
+                            )}
+                            {task.dueDate && (
+                              <span className="text-muted-foreground">
+                                Due {formatDate(task.dueDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Reporting Line */}
           {employee.manager && (
             <Card>
@@ -339,6 +445,24 @@ export function EmployeeProfile({ employee }: { employee: any }) {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Assign Task Modal */}
+      <AssignTaskModal
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        targetEmployee={{
+          id: employee.id,
+          employeeCode: employee.employeeCode,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          photoUrl: employee.photoUrl,
+          department: employee.department,
+          position: employee.position,
+        }}
+        onTaskAssigned={(newTask) => {
+          setTasks((prev) => [newTask, ...prev]);
+        }}
+      />
     </div>
   );
 }

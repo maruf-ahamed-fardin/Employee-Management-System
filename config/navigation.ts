@@ -34,7 +34,6 @@ export const navigationConfig: NavItem[] = [
     title: 'Team Profile',
     href: '/team-profile',
     icon: Contact,
-    badge: 'NFC',
   },
   {
     title: 'Employees',
