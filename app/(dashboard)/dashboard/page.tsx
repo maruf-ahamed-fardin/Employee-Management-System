@@ -1,19 +1,13 @@
 import { reportService } from '@/server/services/report.service';
 import { prisma } from '@/lib/db';
-import { StatsCards } from '@/components/dashboard/StatsCards';
-import { AttendanceChart } from '@/components/dashboard/AttendanceChart';
-import { EmployeeOverview } from '@/components/dashboard/EmployeeOverview';
-import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { CompanyNoticeBoard } from '@/components/dashboard/CompanyNoticeBoard';
-import { DashboardHero } from '@/components/dashboard/DashboardHero';
-import { CelebrationsWidget } from '@/components/dashboard/CelebrationsWidget';
+import { DashboardClientView } from '@/components/dashboard/DashboardClientView';
 
 export const metadata = {
   title: 'Dashboard | SeloraX EMS',
 };
 
 export default async function DashboardPage() {
-  const [metrics, leaveTypes, employees] = await Promise.all([
+  const [metrics, leaveTypes, employees, rawDepartments] = await Promise.all([
     reportService.getDashboardMetrics().catch(() => ({
       totalEmployees: 48,
       activeEmployees: 46,
@@ -41,36 +35,33 @@ export default async function DashboardPage() {
       },
       orderBy: { firstName: 'asc' },
     }),
+    prisma.department.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        _count: {
+          select: { employees: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    }),
   ]);
 
+  const departments = rawDepartments.map((dept) => ({
+    id: dept.id,
+    name: dept.name,
+    code: dept.code,
+    count: dept._count.employees,
+  }));
+
   return (
-    <div className="space-y-6">
-      {/* Dynamic Personalized Hero & 1-Click Quick Action Dock */}
-      <DashboardHero leaveTypes={leaveTypes} employees={employees} />
-
-      {/* Metric Tiles */}
-      <StatsCards
-        totalEmployees={metrics.totalEmployees}
-        presentToday={metrics.attendance.present}
-        lateToday={metrics.attendance.late}
-        pendingLeaves={metrics.pendingLeaves}
-        attendanceRate={metrics.attendance.attendanceRate}
-      />
-
-      {/* Company Notice Board & Peer Recognition Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <CompanyNoticeBoard />
-        <CelebrationsWidget employees={employees} />
-      </div>
-
-      {/* Analytics Charts & Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <AttendanceChart />
-        <EmployeeOverview employees={metrics.recentEmployees as any} />
-      </div>
-
-      {/* System Activity Feed */}
-      <RecentActivity />
-    </div>
+    <DashboardClientView
+      metrics={metrics}
+      leaveTypes={leaveTypes}
+      employees={employees}
+      departments={departments}
+    />
   );
 }

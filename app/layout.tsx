@@ -1,11 +1,24 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import './globals.css';
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
+
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#252175' },
-    { media: '(prefers-color-scheme: dark)', color: '#080c16' },
+    { media: '(prefers-color-scheme: light)', color: '#4f46e5' },
+    { media: '(prefers-color-scheme: dark)', color: '#080c17' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -45,13 +58,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-[#f37021]/20 selection:text-[#ea580c] dark:selection:bg-[#f37021]/30 dark:selection:text-[#fb923c]">
+      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased selection:bg-[#f97316]/20 selection:text-[#ea580c] dark:selection:bg-[#fb923c]/30 dark:selection:text-[#fb923c]`}>
         {children}
         <Toaster position="top-right" richColors />
       </body>

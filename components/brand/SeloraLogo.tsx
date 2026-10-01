@@ -34,12 +34,12 @@ export function SeloraIcon({
         {/* Blue top-left wing with aerodynamic speed cut */}
         <path
           d="M 54 86 L 65 99 L 90 134 L 102 144 L 118 145 L 122 140 L 119 128 L 123 124 L 144 122 L 143 118 L 120 89 L 96 68 Z"
-          className="fill-[#252175] dark:fill-[#818cf8] transition-colors duration-200"
+          className="fill-[#4f46e5] dark:fill-[#818cf8] transition-colors duration-200"
         />
-        {/* Vibrant Energy Orange Cross and legs */}
+        {/* Luminous Warm Sunset Coral Cross and legs */}
         <path
           d="M 266 68 L 215 68 L 196 82 L 175 109 L 160 130 L 157 168 L 153 174 L 148 172 L 142 167 L 66 268 L 54 281 L 55 285 L 90 285 L 105 278 L 120 264 L 150 223 L 159 224 L 191 265 L 211 284 L 269 284 L 268 279 L 250 259 L 222 220 L 193 183 L 192 172 L 196 163 L 223 130 L 265 74 Z"
-          fill="#F37021"
+          className="fill-[#f97316] dark:fill-[#fb923c] transition-colors duration-200"
         />
         {/* 4-pointed Star Sparkle at intersection */}
         {showStar && (
@@ -97,7 +97,7 @@ export function SeloraLogo({
         <div className="flex items-center font-black tracking-tight leading-none">
           <span
             className={cn(
-              'font-black text-[#252175] dark:text-white tracking-tight',
+              'font-black text-[#4f46e5] dark:text-white tracking-tight',
               textSizes[size]
             )}
             style={{ letterSpacing: '-0.03em' }}
