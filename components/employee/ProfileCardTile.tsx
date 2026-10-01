@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, MapPin, Phone, UserRound, ArrowRight, QrCode, RotateCw, Sparkles, ShieldCheck } from 'lucide-react';
+import { Mail, MapPin, Phone, UserRound, ArrowRight, QrCode as QrIcon, RotateCw, Sparkles, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { CardActions } from './CardActions';
 import { ProfileLinks } from './ProfileLinks';
+import { QrCode } from './QRCode';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
@@ -52,12 +53,10 @@ export function ProfileCardTile({
   className?: string;
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
-
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+  const cardUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/team-profile/${person.employeeId}`
-      : `https://selorax.com/profile/${person.employeeId}`
-  )}`;
+      : `/team-profile/${person.employeeId}`;
 
   return (
     <div className={`relative [perspective:1000px] h-full ${className}`}>
@@ -87,7 +86,7 @@ export function ProfileCardTile({
                 title="Flip to view QR code"
                 className="flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 font-mono text-[11px] font-semibold ring-1 ring-white/20 backdrop-blur hover:bg-white/25 transition-all cursor-pointer active:scale-95"
               >
-                <QrCode className="size-3 text-[#F37021]" />
+                <QrIcon className="size-3 text-[#F37021]" />
                 <span>{person.employeeCode}</span>
               </button>
             </div>
@@ -235,11 +234,12 @@ export function ProfileCardTile({
 
           {/* QR Code Presentation */}
           <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
-            <div className="p-3 bg-white rounded-2xl shadow-xl border-2 border-indigo-500/30">
-              <img
-                src={qrUrl}
-                alt={`${person.fullName} QR Code`}
-                className="size-36 object-contain"
+            <div className="p-2.5 bg-white rounded-2xl shadow-xl border-2 border-indigo-500/30 flex items-center justify-center">
+              <QrCode
+                value={cardUrl}
+                label={`${person.fullName} QR Code`}
+                className="size-36"
+                showLogo={true}
               />
             </div>
 
