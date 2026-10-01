@@ -177,6 +177,8 @@ model Employee {
   tasks          Task[]
   expenseClaims  ExpenseClaim[]
   assets         Asset[]
+  onboardingTasks OnboardingTask[]
+  receivedKudos   Kudos[]
 }
 
 // ─── Team Profile (Digital Business Card / vCard / NFC) ───────────────────────
@@ -509,3 +511,43 @@ model Asset {
   @@index([status])
   @@index([assignedToId])
 }
+
+// ─── Employee Lifecycle: Onboarding & Offboarding ────────────────────────────
+
+model OnboardingTask {
+  id          String    @id @default(uuid())
+  employeeId  String
+  type        String    @default("ONBOARDING") // ONBOARDING, OFFBOARDING
+  title       String
+  category    String    @default("HR") // HR, IT, FINANCE, ADMIN
+  status      String    @default("PENDING") // PENDING, COMPLETED, WAIVED
+  assignedTo  String?   @default("HR Operations")
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([type])
+  @@index([status])
+}
+
+// ─── Peer Recognition & Kudos Wall ───────────────────────────────────────────
+
+model Kudos {
+  id          String   @id @default(uuid())
+  senderId    String
+  senderName  String
+  receiverId  String
+  badge       String   @default("Team Player") // Problem Solver, Team Player, Code Wizard, Culture Champion, Leadership
+  message     String
+  likesCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  receiver Employee @relation(fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId])
+}
+

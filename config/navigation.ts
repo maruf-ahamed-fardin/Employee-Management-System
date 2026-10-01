@@ -15,6 +15,8 @@ import {
   Bell,
   Receipt,
   Laptop,
+  ClipboardCheck,
+  FileText,
   LucideIcon,
 } from 'lucide-react';
 
@@ -53,6 +55,12 @@ export const navigationConfig: NavItem[] = [
     title: 'Leave Management',
     href: '/leave',
     icon: CalendarDays,
+    section: 'Workspace',
+  },
+  {
+    title: 'Onboarding',
+    href: '/onboarding',
+    icon: ClipboardCheck,
     section: 'Workspace',
   },
 
@@ -100,6 +108,13 @@ export const navigationConfig: NavItem[] = [
   },
 
   // ─── Administration & Security ─────────────────────────────────────────────
+  {
+    title: 'Documents',
+    href: '/documents',
+    icon: FileText,
+    roles: ['superadmin', 'admin', 'manager', 'super_admin', 'hr_admin'],
+    section: 'Administration',
+  },
   {
     title: 'Reports',
     href: '/reports',
