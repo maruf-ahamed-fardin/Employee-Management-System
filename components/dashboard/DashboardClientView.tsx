@@ -52,6 +52,33 @@ interface DashboardClientViewProps {
   departments?: DepartmentMetric[];
 }
 
+const DEPT_BADGES: Record<string, { badge: string; dot: string }> = {
+  ENG: {
+    badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+    dot: 'bg-blue-500',
+  },
+  FIN: {
+    badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    dot: 'bg-emerald-500',
+  },
+  HRD: {
+    badge: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+    dot: 'bg-rose-500',
+  },
+  PRD: {
+    badge: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+    dot: 'bg-purple-500',
+  },
+  MKT: {
+    badge: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
+    dot: 'bg-orange-500',
+  },
+  SLS: {
+    badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    dot: 'bg-amber-500',
+  },
+};
+
 export function DashboardClientView({
   metrics,
   leaveTypes,
@@ -90,7 +117,7 @@ export function DashboardClientView({
       <DashboardHero leaveTypes={leaveTypes} employees={employees} />
 
       {/* ─── Segmented Navigation Switcher (Desktop & Mobile Optimized) ──────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200/80 dark:border-slate-800 shadow-sm">
         {/* Tab Buttons Pill Group */}
         <div className="grid grid-cols-3 sm:flex items-center gap-1.5 w-full sm:w-auto">
           {tabs.map((tab) => {
@@ -105,8 +132,8 @@ export function DashboardClientView({
                 className={cn(
                   'flex items-center justify-center sm:justify-start gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none active:scale-95',
                   isActive
-                    ? 'bg-gradient-to-r from-slate-900 to-slate-800 dark:from-white dark:to-slate-100 text-white dark:text-slate-950 shadow-md shadow-slate-950/15'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/60'
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-md shadow-slate-950/15'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 )}
               >
                 <Icon
@@ -182,7 +209,7 @@ export function DashboardClientView({
         <div className="space-y-6 animate-fadeIn">
           {/* Summary Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Total Workforce
@@ -199,7 +226,7 @@ export function DashboardClientView({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Departments
@@ -216,7 +243,7 @@ export function DashboardClientView({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Today's Attendance Rate
@@ -235,7 +262,7 @@ export function DashboardClientView({
           </div>
 
           {/* Department Headcount Breakdown Cards */}
-          <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -258,7 +285,7 @@ export function DashboardClientView({
                 </Link>
                 <Link
                   href="/team-profile"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
                   <Contact className="size-3.5 text-[#F37021]" />
                   <span>Digital Cards</span>
@@ -271,35 +298,47 @@ export function DashboardClientView({
               {departments.map((dept) => {
                 const total = metrics.totalEmployees || 1;
                 const percentage = Math.round((dept.count / total) * 100);
+                const theme = DEPT_BADGES[dept.code] || {
+                  badge: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+                  dot: 'bg-indigo-500',
+                };
 
                 return (
                   <div
                     key={dept.id}
-                    className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-slate-50/50 dark:bg-slate-850/50 hover:border-slate-300 dark:hover:border-slate-700 transition-all group"
+                    className="relative overflow-hidden p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-slate-50 dark:bg-[#111827] hover:border-[#F37021]/50 dark:hover:border-[#F37021]/60 hover:shadow-md transition-all duration-200 group"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-[#F37021] transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-[#F37021] transition-colors flex items-center gap-2">
+                        <span className={`size-2 rounded-full ${theme.dot}`} />
                         {dept.name}
                       </span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${theme.badge}`}
+                      >
                         {dept.code}
                       </span>
                     </div>
 
-                    <div className="flex items-baseline justify-between mt-3">
-                      <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-                        {dept.count}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                        {percentage}% of staff
+                    <div className="flex items-baseline justify-between mt-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-3xl font-black font-mono text-slate-900 dark:text-white">
+                          {dept.count}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          staff
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        {percentage}% of total
                       </span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="mt-2.5 h-2 w-full rounded-full bg-slate-200/70 dark:bg-slate-800 overflow-hidden">
+                    <div className="mt-3 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-800/80 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-[#F37021] transition-all duration-500"
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                        style={{ width: `${Math.max(percentage, 8)}%` }}
                       />
                     </div>
                   </div>
