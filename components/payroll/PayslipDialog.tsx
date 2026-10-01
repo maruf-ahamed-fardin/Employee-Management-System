@@ -271,6 +271,7 @@ export function PayslipDialog({
                   value={`https://selorax.com/verify-payslip?ref=${payRefNumber}`}
                   label="Verification QR"
                   className="size-16"
+                  showLogo={false}
                 />
               </div>
               <div>

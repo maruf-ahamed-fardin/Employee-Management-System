@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { QrCode as QrIcon, Share2, Download, Copy, Check } from 'lucide-react';
+import { QrCode as QrIcon, Share2, Download, Copy, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -132,26 +132,42 @@ export function CardActions({
       )}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent className="sm:max-w-md text-center p-6 bg-card border-border shadow-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-[380px] sm:max-w-md text-center p-6 bg-card border-border shadow-2xl rounded-3xl">
+          <DialogHeader className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#252175]/10 dark:bg-indigo-500/15 border border-[#252175]/20 dark:border-indigo-500/30 text-xs font-bold text-primary mx-auto mb-1">
+              <Sparkles className="size-3 text-[#f37021]" />
+              <span>Digital Business Card</span>
+            </div>
             <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
               {card.fullName}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Scan this code with a smartphone camera to view this SeloraX Digital Profile
+              Scan with a smartphone camera to view this SeloraX Digital Profile
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col items-center justify-center my-4 p-4 rounded-2xl bg-white shadow-inner border border-slate-200">
-            <QrCode
-              value={getCardUrl()}
-              label={`QR Code for ${card.fullName}`}
-              className="size-56 sm:size-64 drop-shadow-xs"
-            />
-            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-mono">
-              <span>{card.employeeCode}</span>
-              <span>•</span>
-              <span>{card.department}</span>
+          {/* Branded QR Card Showcase */}
+          <div className="relative my-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-900/80 dark:via-slate-900/50 dark:to-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-[#252175]/5 dark:shadow-black/40 flex flex-col items-center">
+            {/* White QR Code container */}
+            <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center">
+              <QrCode
+                value={getCardUrl()}
+                label={`QR Code for ${card.fullName}`}
+                className="w-48 h-48 sm:w-56 sm:h-56 max-w-full drop-shadow-xs"
+                showLogo={true}
+              />
+            </div>
+
+            {/* Employee ID & Department Badge */}
+            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-1.5 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold border border-slate-200/60 dark:border-slate-700/60">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {card.employeeCode}
+              </span>
+              <span className="text-muted-foreground">•</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {card.department}
+              </span>
             </div>
           </div>
 
@@ -160,7 +176,7 @@ export function CardActions({
               variant="outline"
               size="sm"
               onClick={() => copyUrl(getCardUrl())}
-              className="gap-2 font-medium"
+              className="gap-2 font-semibold h-10 px-4 rounded-xl border-border/80"
             >
               {copiedLink ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
               Copy Link
@@ -169,7 +185,7 @@ export function CardActions({
               variant="default"
               size="sm"
               onClick={() => downloadQrPng(getCardUrl(), `${card.employeeCode}-qr.png`)}
-              className="gap-2 font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+              className="gap-2 font-semibold h-10 px-4 rounded-xl bg-gradient-to-r from-[#252175] to-[#4f46e5] text-white hover:opacity-95 shadow-md shadow-[#252175]/20 cursor-pointer"
             >
               <Download className="size-3.5" />
               Download PNG
@@ -180,3 +196,4 @@ export function CardActions({
     </>
   );
 }
+
