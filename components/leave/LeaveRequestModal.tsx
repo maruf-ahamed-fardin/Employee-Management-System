@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,12 @@ export function LeaveRequestModal({
     endDate: '',
     reason: '',
   });
+
+  useEffect(() => {
+    if (!formData.leaveTypeId && leaveTypes.length > 0) {
+      setFormData((prev) => ({ ...prev, leaveTypeId: leaveTypes[0].id }));
+    }
+  }, [leaveTypes, formData.leaveTypeId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
