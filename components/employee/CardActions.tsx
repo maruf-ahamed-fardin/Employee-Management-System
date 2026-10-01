@@ -19,10 +19,12 @@ export function CardActions({
   card,
   employeeId,
   className = '',
+  layout = 'stack',
 }: {
   card: VCardSource;
   employeeId: string;
   className?: string;
+  layout?: 'stack' | 'grid';
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -61,31 +63,73 @@ export function CardActions({
 
   return (
     <>
-      <div className={`grid grid-cols-3 gap-2 ${className}`}>
-        <SaveContactButton card={card} className="w-full text-xs sm:text-sm px-2 sm:px-4" />
+      {layout === 'grid' ? (
+        <div className={`grid grid-cols-3 gap-2 ${className}`}>
+          <SaveContactButton card={card} size="sm" className="w-full text-xs px-2 truncate" />
 
-        <Button
-          variant="outline"
-          onClick={() => setQrOpen(true)}
-          className="gap-2 font-medium border-border/80 hover:bg-accent hover:text-accent-foreground text-xs sm:text-sm px-2 sm:px-4"
-        >
-          <QrIcon className="size-4 text-primary" />
-          <span>Show QR</span>
-        </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setQrOpen(true)}
+            className="gap-1.5 font-medium border-border/80 hover:bg-accent hover:text-accent-foreground text-xs px-2"
+          >
+            <QrIcon className="size-3.5 text-primary shrink-0" />
+            <span className="truncate">Show QR</span>
+          </Button>
 
-        <Button
-          variant="outline"
-          onClick={handleShare}
-          className="gap-2 font-medium border-border/80 hover:bg-accent hover:text-accent-foreground text-xs sm:text-sm px-2 sm:px-4"
-        >
-          {copiedLink ? (
-            <Check className="size-4 text-emerald-600" />
-          ) : (
-            <Share2 className="size-4 text-[#F37021]" />
-          )}
-          <span>{copiedLink ? 'Copied' : 'Share'}</span>
-        </Button>
-      </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="gap-1.5 font-medium border-border/80 hover:bg-accent hover:text-accent-foreground text-xs px-2"
+          >
+            {copiedLink ? (
+              <Check className="size-3.5 text-emerald-600 shrink-0" />
+            ) : (
+              <Share2 className="size-3.5 text-[#F37021] shrink-0" />
+            )}
+            <span className="truncate">{copiedLink ? 'Copied' : 'Share'}</span>
+          </Button>
+        </div>
+      ) : (
+        <div className={`space-y-2 ${className}`}>
+          <SaveContactButton
+            card={card}
+            size="sm"
+            className="w-full h-9 rounded-xl text-xs font-semibold shadow-xs justify-center"
+          />
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setQrOpen(true)}
+              className="h-8.5 rounded-xl gap-1.5 font-medium border-border/80 hover:bg-accent hover:text-accent-foreground text-xs justify-center"
+            >
+              <QrIcon className="size-3.5 text-primary shrink-0" />
+              <span>Show QR</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="h-8.5 rounded-xl gap-1.5 font-medium border-border/80 hover:bg-accent hover:text-accent-foreground text-xs justify-center"
+            >
+              {copiedLink ? (
+                <Check className="size-3.5 text-emerald-600 shrink-0" />
+              ) : (
+                <Share2 className="size-3.5 text-[#F37021] shrink-0" />
+              )}
+              <span>{copiedLink ? 'Copied' : 'Share'}</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent className="sm:max-w-md text-center p-6 bg-card border-border shadow-2xl">

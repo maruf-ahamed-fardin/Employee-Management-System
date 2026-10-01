@@ -41,33 +41,47 @@ export function MobileNav() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-1">
-          {navigationConfig.map((item) => {
-            if (item.roles && !item.roles.includes(userRole)) return null;
+        <div className="flex-1 overflow-y-auto py-3 space-y-3">
+          {(['Workspace', 'Finance & Operations', 'Organization', 'Administration'] as const).map((sectionName) => {
+            const sectionItems = navigationConfig.filter(
+              (item) => item.section === sectionName && (!item.roles || item.roles.includes(userRole))
+            );
 
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            const Icon = item.icon;
+            if (sectionItems.length === 0) return null;
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-bold shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                )}
-              >
-                <Icon
-                  className={cn(
-                    'size-5 shrink-0',
-                    isActive ? 'text-[#f37021] dark:text-[#fb923c]' : 'text-slate-400'
-                  )}
-                />
-                <span>{item.title}</span>
-              </Link>
+              <div key={sectionName} className="space-y-1">
+                <div className="px-3 pb-1 pt-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  {sectionName}
+                </div>
+
+                {sectionItems.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                  const Icon = item.icon;
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
+                        isActive
+                          ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          'size-4.5 shrink-0',
+                          isActive ? 'text-[#f37021] dark:text-[#fb923c]' : 'text-slate-400'
+                        )}
+                      />
+                      <span>{item.title}</span>
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
         </div>

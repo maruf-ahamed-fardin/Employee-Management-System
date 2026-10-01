@@ -10,10 +10,14 @@ export function SaveContactButton({
   card,
   variant = 'download',
   className = '',
+  size = 'default',
+  label = 'Save Contact (.vcf)',
 }: {
   card: VCardSource;
   variant?: 'download' | 'copy';
   className?: string;
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  label?: string;
 }) {
   const [copied, setCopied] = React.useState(false);
 
@@ -66,11 +70,12 @@ export function SaveContactButton({
   return (
     <Button
       variant="default"
+      size={size}
       onClick={handleDownload}
       className={`font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-2 ${className}`}
     >
-      <UserPlus className="size-4" />
-      Save Contact (.vcf)
+      <UserPlus className="size-4 shrink-0" />
+      <span>{label}</span>
     </Button>
   );
 }

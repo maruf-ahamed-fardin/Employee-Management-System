@@ -57,64 +57,79 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Navigation Items */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navigationConfig.map((item) => {
-          // Check role permissions if specified
-          if (item.roles && !item.roles.includes(userRole)) {
-            return null;
-          }
+      {/* Navigation Items Grouped by Section */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+        {(['Workspace', 'Finance & Operations', 'Organization', 'Administration'] as const).map((sectionName) => {
+          const sectionItems = navigationConfig.filter(
+            (item) => item.section === sectionName && (!item.roles || item.roles.includes(userRole))
+          );
 
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-          const Icon = item.icon;
+          if (sectionItems.length === 0) return null;
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={sidebarCollapsed ? item.title : undefined}
-              className={cn(
-                'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150',
-                isActive
-                  ? 'bg-primary text-primary-foreground shadow-sm shadow-[#252175]/20 dark:shadow-[#4f46e5]/25 font-bold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white'
+            <div key={sectionName} className="space-y-1">
+              {!sidebarCollapsed ? (
+                <div className="px-3 pb-1 pt-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400/90 dark:text-slate-500">
+                  {sectionName}
+                </div>
+              ) : (
+                <div className="my-2 border-t border-border/50" />
               )}
-            >
-              <Icon
-                className={cn(
-                  'size-5 shrink-0 transition-colors',
-                  isActive
-                    ? 'text-[#f37021] dark:text-[#fb923c]'
-                    : 'text-slate-400 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-                )}
-              />
-              {!sidebarCollapsed && <span className="truncate">{item.title}</span>}
-              {!sidebarCollapsed && item.badge && (
-                <span
-                  className={cn(
-                    'ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold',
-                    isActive
-                      ? 'bg-white/20 text-white'
-                      : 'bg-[#f37021]/15 text-[#ea580c] dark:bg-[#f37021]/20 dark:text-[#fb923c]'
-                  )}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </Link>
+
+              {sectionItems.map((item) => {
+                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={sidebarCollapsed ? item.title : undefined}
+                    className={cn(
+                      'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-150',
+                      isActive
+                        ? 'bg-primary text-primary-foreground shadow-sm shadow-[#252175]/20 dark:shadow-[#4f46e5]/25 font-bold'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white'
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'size-4.5 shrink-0 transition-colors',
+                        isActive
+                          ? 'text-[#f37021] dark:text-[#fb923c]'
+                          : 'text-slate-400 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                      )}
+                    />
+                    {!sidebarCollapsed && <span className="truncate">{item.title}</span>}
+                    {!sidebarCollapsed && item.badge && (
+                      <span
+                        className={cn(
+                          'ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold',
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-[#f37021]/15 text-[#ea580c] dark:bg-[#f37021]/20 dark:text-[#fb923c]'
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </div>
 
-      {/* Pro Badge Card */}
+      {/* Enterprise Status Footer */}
       {!sidebarCollapsed && (
-        <div className="p-3.5 m-3 rounded-2xl bg-gradient-to-br from-[#252175]/8 via-[#f37021]/6 to-transparent border border-[#252175]/15 dark:border-[#818cf8]/20 dark:from-[#4f46e5]/10 dark:via-[#f37021]/10">
+        <div className="p-3 m-3 rounded-2xl bg-gradient-to-br from-[#252175]/8 via-[#f37021]/6 to-transparent border border-[#252175]/15 dark:border-[#818cf8]/20 dark:from-[#4f46e5]/10 dark:via-[#f37021]/10">
           <div className="flex items-center gap-2 text-xs font-bold text-[#252175] dark:text-[#818cf8]">
             <Sparkles className="size-3.5 text-[#f37021]" />
-            <span>Digital ID & NFC</span>
+            <span>SeloraX Enterprise</span>
           </div>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            NFC smart card writing & digital vCard enabled.
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            Workforce telemetry & active operations.
           </p>
         </div>
       )}

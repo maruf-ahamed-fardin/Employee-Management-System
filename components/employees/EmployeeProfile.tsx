@@ -17,6 +17,13 @@ import {
   QrCode as QrIcon,
   Download,
   Share2,
+  CheckSquare,
+  Plus,
+  CheckCircle2,
+  Circle,
+  Clock,
+  Laptop,
+  ChevronRight,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +31,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatDate, formatCurrency } from '@/lib/utils/date';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AssignTaskModal } from '@/components/employees/AssignTaskModal';
 import { toast } from 'sonner';
 
-export function EmployeeProfile({ employee }: { employee: any }) {
+export function EmployeeProfile({
+  employee,
+  assets = [],
+}: {
+  employee: any;
+  assets?: any[];
+}) {
   const [qrOpen, setQrOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [tasks, setTasks] = useState<any[]>(employee.tasks || []);
   const fullName = `${employee.firstName} ${employee.lastName}`;
   const initials = `${employee.firstName[0] || ''}${employee.lastName[0] || ''}`.toUpperCase();
 
@@ -270,6 +286,159 @@ export function EmployeeProfile({ employee }: { employee: any }) {
             </CardContent>
           </Card>
 
+          {/* Assigned Work & Tasks Card */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckSquare className="size-4 text-primary" />
+                  <span>Assigned Tasks & Workload ({tasks.length})</span>
+                </CardTitle>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setAssignOpen(true)}
+                className="h-8 gap-1.5 text-xs font-semibold"
+              >
+                <Plus className="size-3.5" />
+                <span>Assign Task</span>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {tasks.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No active tasks assigned to this employee.
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {tasks.map((task) => {
+                    const isDone = task.status === 'DONE';
+                    return (
+                      <div
+                        key={task.id}
+                        className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs transition-all ${
+                          isDone
+                            ? 'border-border/40 bg-card/40 opacity-60'
+                            : 'border-border bg-card shadow-2xs hover:border-primary/30'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextStatus = isDone ? 'IN_PROGRESS' : 'DONE';
+                            setTasks((prev) =>
+                              prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
+                            );
+                            fetch(`/api/tasks/${task.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: nextStatus }),
+                            }).then((r) => r.json()).then((d) => {
+                              if (d.success) toast.success(`Task status updated`);
+                            });
+                          }}
+                          className="mt-0.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
+                          title={isDone ? 'Mark as In Progress' : 'Mark as Done'}
+                        >
+                          {isDone ? (
+                            <CheckCircle2 className="size-4 text-emerald-600" />
+                          ) : (
+                            <Circle className="size-4" />
+                          )}
+                        </button>
+
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`font-semibold ${
+                              isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                            }`}
+                          >
+                            {task.title}
+                          </p>
+                          {task.description && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px]">
+                            <span className="rounded px-1.5 py-0.5 font-bold uppercase bg-primary/10 text-primary">
+                              {task.priority}
+                            </span>
+                            {task.category && (
+                              <span className="text-muted-foreground font-mono">#{task.category}</span>
+                            )}
+                            {task.dueDate && (
+                              <span className="text-muted-foreground">
+                                Due {formatDate(task.dueDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Assigned Hardware & Assets */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Laptop className="size-4 text-indigo-500" />
+                  <span>Assigned Hardware & Assets ({assets.length})</span>
+                </CardTitle>
+              </div>
+              <Link
+                href="/assets"
+                className="text-xs text-indigo-500 hover:text-indigo-400 font-medium flex items-center gap-1"
+              >
+                <span>Inventory Hub</span>
+                <ChevronRight className="size-3" />
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {assets.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No company hardware or devices currently issued to this employee.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {assets.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col justify-between"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-semibold text-xs text-slate-900 dark:text-white">
+                            {item.name}
+                          </div>
+                          {item.model && (
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {item.model}
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
+                          {item.assetTag}
+                        </span>
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+                        <span className="font-mono">SN: {item.serialNumber || 'N/A'}</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.condition}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Reporting Line */}
           {employee.manager && (
             <Card>
@@ -339,6 +508,24 @@ export function EmployeeProfile({ employee }: { employee: any }) {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Assign Task Modal */}
+      <AssignTaskModal
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        targetEmployee={{
+          id: employee.id,
+          employeeCode: employee.employeeCode,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          photoUrl: employee.photoUrl,
+          department: employee.department,
+          position: employee.position,
+        }}
+        onTaskAssigned={(newTask) => {
+          setTasks((prev) => [newTask, ...prev]);
+        }}
+      />
     </div>
   );
 }

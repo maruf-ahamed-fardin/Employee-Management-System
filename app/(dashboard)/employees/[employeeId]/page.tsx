@@ -43,6 +43,9 @@ export default async function EmployeeDetailPage({
       department: true,
       position: true,
       manager: true,
+      tasks: {
+        orderBy: { createdAt: 'desc' },
+      },
       directReports: {
         include: { position: true },
       },
@@ -50,6 +53,11 @@ export default async function EmployeeDetailPage({
   });
 
   if (!employee) notFound();
+
+  const assets: any[] = await prisma.$queryRawUnsafe(
+    `SELECT * FROM Asset WHERE assignedToId = ? ORDER BY createdAt DESC`,
+    employee.id
+  );
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -63,7 +71,7 @@ export default async function EmployeeDetailPage({
         </Link>
       </div>
 
-      <EmployeeProfile employee={employee} />
+      <EmployeeProfile employee={employee} assets={assets || []} />
     </div>
   );
 }

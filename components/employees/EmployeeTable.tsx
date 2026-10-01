@@ -4,16 +4,18 @@ import Link from 'next/link';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils/date';
-import { Eye, Edit3, Trash2 } from 'lucide-react';
+import { Eye, Edit3, Trash2, Plus, CheckSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface EmployeeTableProps {
   employees: any[];
   onDelete?: (id: string) => void;
+  onAssignTask?: (employee: any) => void;
 }
 
-export function EmployeeTable({ employees = [], onDelete }: EmployeeTableProps) {
+export function EmployeeTable({ employees = [], onDelete, onAssignTask }: EmployeeTableProps) {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete ${name}?`)) return;
     try {
@@ -38,9 +40,9 @@ export function EmployeeTable({ employees = [], onDelete }: EmployeeTableProps) 
             <TableHead>Employee</TableHead>
             <TableHead>Code</TableHead>
             <TableHead>Department</TableHead>
-            <TableHead>Position</TableHead>
+            <TableHead>Assigned Tasks</TableHead>
+            <TableHead>Workload</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Joined</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -55,20 +57,23 @@ export function EmployeeTable({ employees = [], onDelete }: EmployeeTableProps) 
             employees.map((emp) => {
               const fullName = `${emp.firstName} ${emp.lastName}`;
               const initials = `${emp.firstName[0] || ''}${emp.lastName[0] || ''}`.toUpperCase();
+              const tasks = emp.tasks || [];
+              const activeTasks = tasks.filter((t: any) => t.status !== 'DONE');
+              const topTask = activeTasks[0] || tasks[0];
 
               return (
                 <TableRow key={emp.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar initials={initials} src={emp.photoUrl} size="sm" />
-                      <div>
+                      <div className="min-w-0">
                         <Link
                           href={`/employees/${emp.id}`}
-                          className="font-bold text-slate-900 dark:text-white hover:text-primary transition-colors"
+                          className="font-bold text-slate-900 dark:text-white hover:text-primary transition-colors block truncate"
                         >
                           {fullName}
                         </Link>
-                        <p className="text-xs text-slate-400">{emp.email}</p>
+                        <p className="text-xs text-slate-400 truncate">{emp.position?.title || emp.email}</p>
                       </div>
                     </div>
                   </TableCell>
@@ -78,19 +83,75 @@ export function EmployeeTable({ employees = [], onDelete }: EmployeeTableProps) 
                   <TableCell className="text-xs text-slate-700 dark:text-slate-300">
                     {emp.department?.name || 'General'}
                   </TableCell>
-                  <TableCell className="text-xs text-slate-700 dark:text-slate-300">
-                    {emp.position?.title || 'Staff'}
+                  <TableCell>
+                    {topTask ? (
+                      <div className="max-w-[200px]">
+                        <p className="text-xs font-medium text-foreground truncate" title={topTask.title}>
+                          {topTask.title}
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">
+                          {activeTasks.length} active {activeTasks.length === 1 ? 'task' : 'tasks'}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No active tasks</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="w-28 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span
+                          className={`font-semibold ${
+                            activeTasks.length === 0
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : activeTasks.length <= 2
+                              ? 'text-sky-600 dark:text-sky-400'
+                              : 'text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {activeTasks.length === 0
+                            ? 'Available'
+                            : `${activeTasks.length} active`}
+                        </span>
+                        <span className="font-mono text-muted-foreground font-bold">
+                          {Math.min(100, Math.round((activeTasks.length / 5) * 100))}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-secondary/80 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            activeTasks.length === 0
+                              ? 'bg-emerald-500'
+                              : activeTasks.length <= 2
+                              ? 'bg-sky-500'
+                              : 'bg-amber-500'
+                          }`}
+                          style={{
+                            width: `${Math.max(8, Math.min(100, Math.round((activeTasks.length / 5) * 100)))}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={emp.status === 'ACTIVE' ? 'success' : 'secondary'}>
                       {emp.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-500 whitespace-nowrap">
-                    {formatDate(emp.joiningDate)}
-                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onAssignTask?.(emp)}
+                        title="Assign Task"
+                        className="h-8 gap-1 px-2 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        <Plus className="size-3.5" />
+                        <span className="hidden sm:inline">Assign</span>
+                      </Button>
+
                       <Link
                         href={`/employees/${emp.id}`}
                         title="View Profile"
@@ -98,6 +159,7 @@ export function EmployeeTable({ employees = [], onDelete }: EmployeeTableProps) 
                       >
                         <Eye className="size-4" />
                       </Link>
+
                       <Link
                         href={`/employees/${emp.id}/edit`}
                         title="Edit Record"
@@ -105,6 +167,7 @@ export function EmployeeTable({ employees = [], onDelete }: EmployeeTableProps) 
                       >
                         <Edit3 className="size-4" />
                       </Link>
+
                       <button
                         type="button"
                         onClick={() => handleDelete(emp.id, fullName)}

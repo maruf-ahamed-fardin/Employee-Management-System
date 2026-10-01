@@ -1,12 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Download, QrCode as QrIcon, Share2, UserCheck } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { calculateTenure, formatDate } from '@/lib/utils/date';
+import {
+  CheckSquare,
+  Clock,
+  Plus,
+  ArrowRight,
+  User,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Circle,
+  MapPin,
+  Mail,
+  Building2,
+} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+export interface TaskItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  priority: string;
+  status: string;
+  dueDate?: string | Date | null;
+  category?: string | null;
+}
 
 export interface EmployeeCardProps {
   employee: {
@@ -24,212 +46,312 @@ export interface EmployeeCardProps {
     headline?: string | null;
     businessPhone?: string | null;
     photoUrl?: string | null;
-    socialLinks?: { kind: string; url: string }[];
+    tasks?: TaskItem[];
   };
+  onAssignTask?: (employee: any) => void;
+  onTaskStatusChange?: (taskId: string, newStatus: string) => void;
 }
 
-export function EmployeeCard({ employee }: EmployeeCardProps) {
-  const [qrOpen, setQrOpen] = useState(false);
+export function EmployeeCard({ employee, onAssignTask, onTaskStatusChange }: EmployeeCardProps) {
+  const [localTasks, setLocalTasks] = useState<TaskItem[]>(employee.tasks || []);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+
+  // Sync if prop changes
+  React.useEffect(() => {
+    setLocalTasks(employee.tasks || []);
+  }, [employee.tasks]);
+
   const fullName = `${employee.firstName} ${employee.lastName}`;
-  const tenure = calculateTenure(employee.joiningDate);
   const initials = `${employee.firstName[0] || ''}${employee.lastName[0] || ''}`.toUpperCase();
 
-  const handleDownloadVCard = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const activeTasks = localTasks.filter((t) => t.status !== 'DONE');
+  const completedCount = localTasks.filter((t) => t.status === 'DONE').length;
 
-    const vCardData = [
-      'BEGIN:VCARD',
-      'VERSION:3.0',
-      `FN:${fullName}`,
-      `N:${employee.lastName};${employee.firstName};;;`,
-      `ORG:SeloraX;${employee.department?.name || 'Department'}`,
-      `TITLE:${employee.position?.title || 'Staff'}`,
-      `EMAIL;TYPE=WORK:${employee.email}`,
-      `TEL;TYPE=WORK:${employee.businessPhone || employee.phone}`,
-      `NOTE:SeloraX Employee Code: ${employee.employeeCode}`,
-      'END:VCARD',
-    ].join('\r\n');
-
-    const blob = new Blob([vCardData], { type: 'text/vcard;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${employee.employeeCode}-${fullName.replace(/\s+/g, '_')}.vcf`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Contact saved for ${fullName}`);
+  // Workload badge styling based on active task count
+  const getWorkloadStatus = () => {
+    const count = activeTasks.length;
+    if (count === 0) {
+      return {
+        label: 'Available',
+        className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+        dot: 'bg-emerald-500',
+      };
+    }
+    if (count <= 2) {
+      return {
+        label: `${count} Active ${count === 1 ? 'Task' : 'Tasks'}`,
+        className: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+        dot: 'bg-blue-500',
+      };
+    }
+    if (count <= 4) {
+      return {
+        label: `${count} Tasks (Moderate)`,
+        className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+        dot: 'bg-amber-500',
+      };
+    }
+    return {
+      label: `${count} Tasks (High Load)`,
+      className: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+      dot: 'bg-rose-500',
+    };
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const workload = getWorkloadStatus();
+  const capacityPercent = Math.min(100, Math.round((activeTasks.length / 5) * 100));
+  const capacityColor =
+    capacityPercent === 0
+      ? 'from-emerald-500 to-teal-400'
+      : capacityPercent <= 40
+      ? 'from-sky-500 to-indigo-500'
+      : capacityPercent <= 80
+      ? 'from-amber-500 to-orange-400'
+      : 'from-rose-500 to-red-500';
 
-    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/employees/${employee.id}` : '';
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: fullName, text: `Contact card for ${fullName}`, url: shareUrl });
-        return;
-      } catch {}
+  // Toggle task status
+  const handleToggleTaskStatus = async (task: TaskItem) => {
+    const nextStatus = task.status === 'DONE' ? 'IN_PROGRESS' : 'DONE';
+    setUpdatingTaskId(task.id);
+
+    // Optimistic UI update
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
+    );
+
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(
+          nextStatus === 'DONE'
+            ? `Marked "${task.title}" as completed`
+            : `Reopened "${task.title}"`
+        );
+        if (onTaskStatusChange) {
+          onTaskStatusChange(task.id, nextStatus);
+        }
+      } else {
+        // Revert on error
+        setLocalTasks((prev) =>
+          prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t))
+        );
+        toast.error('Failed to update task status');
+      }
+    } catch {
+      setLocalTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t))
+      );
+      toast.error('Network error updating task');
+    } finally {
+      setUpdatingTaskId(null);
     }
-    await navigator.clipboard.writeText(shareUrl);
-    toast.success('Profile link copied to clipboard!');
+  };
+
+  const getPriorityBadge = (p: string) => {
+    switch (p.toUpperCase()) {
+      case 'URGENT':
+        return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20';
+      case 'HIGH':
+        return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+      case 'MEDIUM':
+        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+      default:
+        return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20';
+    }
+  };
+
+  const formatDueDate = (d?: string | Date | null) => {
+    if (!d) return null;
+    const date = new Date(d);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
-    <>
-      <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-900 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
-        {/* Badge Header Banner */}
-        <div className="relative h-28 overflow-hidden bg-gradient-to-br from-[#1d1b4f] via-[#3b2aa8] to-[#7b3fe4]">
-          <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:12px_12px]" />
-          <div className="relative flex items-center justify-between px-4 pt-3 text-white">
-            <span className="text-[10px] font-bold tracking-widest uppercase opacity-90">
-              SeloraX · Team
-            </span>
-            <span className="rounded-md bg-white/20 px-2 py-0.5 font-mono text-xs font-semibold backdrop-blur-sm">
-              {employee.employeeCode}
-            </span>
-          </div>
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/40">
+      {/* Header Bar with Code & Workload Badge */}
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3.5">
+        <span className="font-mono text-xs font-bold text-muted-foreground bg-secondary/80 px-2 py-0.5 rounded-md">
+          {employee.employeeCode}
+        </span>
+
+        {/* Workload Status Pill */}
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${workload.className}`}
+        >
+          <span className={`size-1.5 rounded-full ${workload.dot}`} />
+          {workload.label}
+        </span>
+      </div>
+
+      {/* Employee Profile Identity */}
+      <div className="mt-4 flex items-center gap-3.5">
+        <div className="relative">
+          <Avatar className="size-12 ring-2 ring-primary/20 bg-card">
+            {employee.photoUrl && <AvatarImage src={employee.photoUrl} alt={fullName} />}
+            <AvatarFallback className="bg-[#252175] text-[#F37021] font-bold text-sm">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" title="Active on duty" />
         </div>
 
-        <div className="flex flex-1 flex-col px-5 pb-4">
-          {/* Avatar */}
-          <div className="relative -mt-12 flex justify-center">
-            <Avatar initials={initials} src={employee.photoUrl} size="lg" className="border-4 border-white dark:border-slate-900" />
-          </div>
-
-          {/* Name & Title */}
-          <div className="mt-3 text-center">
-            <Link
-              href={`/employees/${employee.id}`}
-              className="font-extrabold text-base tracking-tight hover:text-primary transition-colors"
-            >
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
+            <Link href={`/employees/${employee.id}`} className="hover:underline">
               {fullName}
             </Link>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-              {employee.position?.title || 'Team Member'}
-            </p>
-          </div>
-
-          {/* Department & Location Chips */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary ring-1 ring-inset ring-primary/20">
-              {employee.department?.name || 'General'}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              <MapPin className="size-3" />
-              {employee.workLocation || 'Dhaka HQ'}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              {tenure}
-            </span>
-          </div>
-
-          {/* Headline */}
-          {employee.headline && (
-            <p className="mt-3 line-clamp-2 text-center text-xs text-slate-500 dark:text-slate-400 italic">
-              “{employee.headline}”
-            </p>
-          )}
-
-          {/* Contact Details */}
-          <div className="mt-4 border-t border-slate-100 dark:border-slate-800/80 pt-3 space-y-2 text-xs">
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-              <span className="grid size-6 place-items-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
-                <Mail className="size-3.5" />
-              </span>
-              <a href={`mailto:${employee.email}`} className="truncate hover:text-primary hover:underline">
-                {employee.email}
-              </a>
-            </div>
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-              <span className="grid size-6 place-items-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
-                <Phone className="size-3.5" />
-              </span>
-              <a href={`tel:${employee.businessPhone || employee.phone}`} className="truncate hover:text-primary hover:underline">
-                {employee.businessPhone || employee.phone}
-              </a>
-            </div>
-            {employee.manager && (
-              <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 text-[11px]">
-                <span className="grid size-6 place-items-center rounded-lg bg-slate-100 dark:bg-slate-800">
-                  <UserCheck className="size-3.5" />
-                </span>
-                <span className="truncate">Reports to {employee.manager.firstName} {employee.manager.lastName}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Action Footer */}
-          <div className="mt-auto border-t border-slate-100 dark:border-slate-800/80 pt-3 grid grid-cols-4 gap-1 text-[11px] font-semibold text-slate-500">
-            <button
-              type="button"
-              onClick={handleDownloadVCard}
-              title="Save Contact"
-              className="flex flex-col items-center gap-1 rounded-xl py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              <Download className="size-4" />
-              <span>Save</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setQrOpen(true)}
-              title="View QR Code"
-              className="flex flex-col items-center gap-1 rounded-xl py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              <QrIcon className="size-4" />
-              <span>QR</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleShare}
-              title="Share Card"
-              className="flex flex-col items-center gap-1 rounded-xl py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              <Share2 className="size-4" />
-              <span>Share</span>
-            </button>
-            <Link
-              href={`/employees/${employee.id}`}
-              className="flex flex-col items-center gap-1 rounded-xl py-1.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-            >
-              <span className="my-auto font-bold">Profile</span>
-            </Link>
+          </h3>
+          <p className="truncate text-xs font-medium text-muted-foreground">
+            {employee.position?.title || 'Staff Position'}
+          </p>
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Building2 className="size-3 shrink-0" />
+            <span className="truncate">{employee.department?.name || 'Department'}</span>
           </div>
         </div>
-      </article>
+      </div>
 
-      {/* QR Code Modal */}
-      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent className="sm:max-w-xs text-center">
-          <DialogHeader>
-            <DialogTitle>{fullName}</DialogTitle>
-            <DialogDescription>
-              Scan to view digital employee card
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 dark:border-slate-700 my-2">
-            <div className="p-3 bg-white rounded-xl">
-              {/* Fallback QR generator display or SVG */}
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  typeof window !== 'undefined' ? `${window.location.origin}/employees/${employee.id}` : ''
-                )}`}
-                alt="QR Code"
-                className="size-44 object-contain"
-              />
-            </div>
-            <p className="mt-2 text-xs font-mono font-bold text-slate-700">{employee.employeeCode}</p>
+      {/* Visual Workload Capacity Gauge */}
+      <div className="mt-3.5 pt-2.5 border-t border-border/50">
+        <div className="flex items-center justify-between text-[11px] mb-1.5">
+          <span className="text-muted-foreground font-medium">Workload Meter</span>
+          <span className="font-mono font-bold text-foreground">{capacityPercent}% capacity</span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-secondary/80 overflow-hidden">
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${capacityColor} transition-all duration-500`}
+            style={{ width: `${Math.max(5, capacityPercent)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Assigned Tasks Section */}
+      <div className="mt-3.5 flex-1 rounded-xl border border-border/60 bg-secondary/20 p-3 flex flex-col">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+            <CheckSquare className="size-3.5 text-primary" />
+            <span>Assigned Tasks ({localTasks.length})</span>
           </div>
-          <button
-            onClick={() => setQrOpen(false)}
-            className="w-full h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-semibold hover:bg-slate-200 cursor-pointer"
+          {completedCount > 0 && (
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+              {completedCount} completed
+            </span>
+          )}
+        </div>
+
+        {/* Task List or Empty State */}
+        {localTasks.length === 0 ? (
+          <div className="my-auto py-5 text-center">
+            <p className="text-xs text-muted-foreground">No tasks currently assigned</p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+              Ready for new assignments
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2 flex-1">
+            {localTasks.slice(0, 3).map((task) => {
+              const isDone = task.status === 'DONE';
+              const isUpdating = updatingTaskId === task.id;
+
+              return (
+                <div
+                  key={task.id}
+                  className={`group/task flex items-start gap-2 rounded-lg border p-2 text-xs transition-all ${
+                    isDone
+                      ? 'border-border/40 bg-card/40 opacity-60'
+                      : 'border-border bg-card shadow-2xs hover:border-primary/30'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleToggleTaskStatus(task)}
+                    disabled={isUpdating}
+                    className="mt-0.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
+                    title={isDone ? 'Mark as In Progress' : 'Mark as Done'}
+                  >
+                    {isDone ? (
+                      <CheckCircle2 className="size-3.5 text-emerald-600" />
+                    ) : (
+                      <Circle className="size-3.5" />
+                    )}
+                  </button>
+
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`truncate font-medium leading-tight ${
+                        isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                      }`}
+                      title={task.title}
+                    >
+                      {task.title}
+                    </p>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
+                      <span
+                        className={`rounded px-1.5 py-0.2 font-semibold uppercase border ${getPriorityBadge(
+                          task.priority
+                        )}`}
+                      >
+                        {task.priority}
+                      </span>
+
+                      {task.category && (
+                        <span className="text-muted-foreground font-mono">
+                          #{task.category}
+                        </span>
+                      )}
+
+                      {task.dueDate && (
+                        <span className="inline-flex items-center gap-0.5 text-muted-foreground ml-auto">
+                          <Calendar className="size-2.5" />
+                          <span>{formatDueDate(task.dueDate)}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {localTasks.length > 3 && (
+              <p className="text-[11px] text-center font-medium text-muted-foreground pt-1">
+                + {localTasks.length - 3} more assigned tasks
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Card Action Footer */}
+      <div className="mt-4 pt-3 border-t border-border/60 flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => onAssignTask?.(employee)}
+          className="flex-1 font-semibold text-xs h-9 gap-1.5 shadow-xs"
+        >
+          <Plus className="size-3.5" />
+          <span>Assign Task</span>
+        </Button>
+
+        <Link href={`/employees/${employee.id}`} className="shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs h-9 px-3 font-medium border-border/80 hover:bg-accent"
           >
-            Close
-          </button>
-        </DialogContent>
-      </Dialog>
-    </>
+            <span>Profile</span>
+            <ArrowRight className="size-3 ml-1" />
+          </Button>
+        </Link>
+      </div>
+    </article>
   );
 }

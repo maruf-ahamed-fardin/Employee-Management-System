@@ -17,4 +17,5 @@ const nextConfig: NextConfig = {
   },
 };
 
+// Touch to restart Next.js server with new Prisma schema
 export default nextConfig;

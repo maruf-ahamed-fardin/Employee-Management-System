@@ -1,65 +1,52 @@
 import { reportService } from '@/server/services/report.service';
+import { prisma } from '@/lib/db';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { AttendanceChart } from '@/components/dashboard/AttendanceChart';
 import { EmployeeOverview } from '@/components/dashboard/EmployeeOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { UserPlus, CalendarPlus, Clock } from 'lucide-react';
+import { CompanyNoticeBoard } from '@/components/dashboard/CompanyNoticeBoard';
+import { DashboardHero } from '@/components/dashboard/DashboardHero';
+import { CelebrationsWidget } from '@/components/dashboard/CelebrationsWidget';
 
 export const metadata = {
-  title: 'Dashboard',
+  title: 'Dashboard | SeloraX EMS',
 };
 
 export default async function DashboardPage() {
-  const metrics = await reportService.getDashboardMetrics().catch(() => ({
-    totalEmployees: 48,
-    activeEmployees: 46,
-    departmentsCount: 6,
-    pendingLeaves: 3,
-    attendance: {
-      present: 42,
-      late: 4,
-      absent: 2,
-      onLeave: 2,
-      attendanceRate: 91,
-    },
-    recentEmployees: [],
-  }));
+  const [metrics, leaveTypes, employees] = await Promise.all([
+    reportService.getDashboardMetrics().catch(() => ({
+      totalEmployees: 48,
+      activeEmployees: 46,
+      departmentsCount: 6,
+      pendingLeaves: 3,
+      attendance: {
+        present: 42,
+        late: 4,
+        absent: 2,
+        onLeave: 2,
+        attendanceRate: 91,
+      },
+      recentEmployees: [],
+    })),
+    prisma.leaveType.findMany({ where: { isActive: true } }),
+    prisma.employee.findMany({
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        photoUrl: true,
+        department: { select: { name: true } },
+        position: { select: { title: true } },
+      },
+      orderBy: { firstName: 'asc' },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Quick Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Workforce Dashboard
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Real-time organizational telemetry, presence analytics, and HR operations
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/attendance">
-            <Button variant="outline" size="sm">
-              <Clock className="size-3.5 mr-1" />
-              Check In
-            </Button>
-          </Link>
-          <Link href="/leave">
-            <Button variant="outline" size="sm">
-              <CalendarPlus className="size-3.5 mr-1" />
-              Apply Leave
-            </Button>
-          </Link>
-          <Link href="/employees/new">
-            <Button size="sm">
-              <UserPlus className="size-3.5 mr-1" />
-              Add Employee
-            </Button>
-          </Link>
-        </div>
-      </div>
+      {/* Dynamic Personalized Hero & 1-Click Quick Action Dock */}
+      <DashboardHero leaveTypes={leaveTypes} employees={employees} />
 
       {/* Metric Tiles */}
       <StatsCards
@@ -69,6 +56,12 @@ export default async function DashboardPage() {
         pendingLeaves={metrics.pendingLeaves}
         attendanceRate={metrics.attendance.attendanceRate}
       />
+
+      {/* Company Notice Board & Peer Recognition Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <CompanyNoticeBoard />
+        <CelebrationsWidget employees={employees} />
+      </div>
 
       {/* Analytics Charts & Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

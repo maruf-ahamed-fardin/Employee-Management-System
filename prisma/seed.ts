@@ -220,6 +220,9 @@ async function main() {
   const leaveSick = await prisma.leaveType.create({ data: { name: 'Medical / Sick Leave', code: 'SICK', defaultDays: 10, isPaid: true } });
   const leaveCasual = await prisma.leaveType.create({ data: { name: 'Casual Leave', code: 'CASUAL', defaultDays: 5, isPaid: true } });
   const leaveMaternity = await prisma.leaveType.create({ data: { name: 'Parental Leave', code: 'PARENTAL', defaultDays: 30, isPaid: true } });
+  const leaveExam = await prisma.leaveType.create({ data: { name: 'Exam', code: 'EXAM', defaultDays: 10, isPaid: true } });
+  const leaveClass = await prisma.leaveType.create({ data: { name: 'University Class', code: 'UNIVERSITY_CLASS', defaultDays: 12, isPaid: true } });
+  const leaveOther = await prisma.leaveType.create({ data: { name: 'Others', code: 'OTHERS', defaultDays: 5, isPaid: true } });
 
   // 7. Leave Balances for Employees
   const currentYear = new Date().getFullYear();
@@ -230,6 +233,9 @@ async function main() {
         { employeeId: emp.id, leaveTypeId: leaveSick.id, year: currentYear, allocated: 10, used: 1, pending: 0 },
         { employeeId: emp.id, leaveTypeId: leaveCasual.id, year: currentYear, allocated: 5, used: 0, pending: 0 },
         { employeeId: emp.id, leaveTypeId: leaveMaternity.id, year: currentYear, allocated: 30, used: 0, pending: 0 },
+        { employeeId: emp.id, leaveTypeId: leaveExam.id, year: currentYear, allocated: 10, used: 0, pending: 0 },
+        { employeeId: emp.id, leaveTypeId: leaveClass.id, year: currentYear, allocated: 12, used: 0, pending: 0 },
+        { employeeId: emp.id, leaveTypeId: leaveOther.id, year: currentYear, allocated: 5, used: 0, pending: 0 },
       ],
     });
   }
