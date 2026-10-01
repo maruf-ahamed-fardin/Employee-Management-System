@@ -15,6 +15,9 @@ export default async function EmployeesPage() {
         department: true,
         position: true,
         manager: true,
+        tasks: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     }),
@@ -31,10 +34,10 @@ export default async function EmployeesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Employee Directory
+            Employee Directory & Workload
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Browse staff profiles, digital cards, contact numbers, and corporate hierarchy
+            Manage team assignments, monitor active tasks & workload, and delegate work
           </p>
         </div>
         <Link href="/employees/new">

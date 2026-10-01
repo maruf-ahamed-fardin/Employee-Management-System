@@ -245,15 +245,17 @@ export function PayrollClient({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setSelectedRecord(r)}
-                          title="View Payslip"
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                          className="h-7 text-xs font-semibold gap-1 text-primary border-primary/20 hover:bg-primary/10"
                         >
-                          <Eye className="size-4" />
-                        </button>
+                          <Eye className="size-3" />
+                          <span>Payslip</span>
+                        </Button>
                         {r.status !== 'PAID' && (
-                          <Button size="sm" variant="outline" onClick={() => handleMarkPaid(r.id)} className="h-7 text-xs">
+                          <Button size="sm" variant="default" onClick={() => handleMarkPaid(r.id)} className="h-7 text-xs font-semibold">
                             Mark Paid
                           </Button>
                         )}
