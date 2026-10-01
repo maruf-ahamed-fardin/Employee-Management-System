@@ -3,6 +3,7 @@ import { StatsCards } from '@/components/dashboard/StatsCards';
 import { AttendanceChart } from '@/components/dashboard/AttendanceChart';
 import { EmployeeOverview } from '@/components/dashboard/EmployeeOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
+import { CompanyNoticeBoard } from '@/components/dashboard/CompanyNoticeBoard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { UserPlus, CalendarPlus, Clock } from 'lucide-react';
@@ -69,6 +70,9 @@ export default async function DashboardPage() {
         pendingLeaves={metrics.pendingLeaves}
         attendanceRate={metrics.attendance.attendanceRate}
       />
+
+      {/* Company Notice Board & Public Holiday Calendar */}
+      <CompanyNoticeBoard />
 
       {/* Analytics Charts & Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

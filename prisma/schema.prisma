@@ -436,3 +436,21 @@ model Task {
   @@index([status])
 }
 
+// ─── Company Announcements & Notices ──────────────────────────────────────────
+
+model Announcement {
+  id         String    @id @default(uuid())
+  title      String
+  content    String
+  priority   String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  isPinned   Boolean   @default(false)
+  authorName String    @default("HR Operations")
+  category   String    @default("General") // HR, EVENT, POLICY, EMERGENCY
+  validUntil DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([priority])
+}
+
+
