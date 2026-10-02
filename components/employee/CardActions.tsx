@@ -146,21 +146,19 @@ export function CardActions({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Branded QR Card Showcase */}
-          <div className="relative my-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-900/80 dark:via-slate-900/50 dark:to-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-[#252175]/5 dark:shadow-black/40 flex flex-col items-center">
-            {/* White QR Code container */}
-            <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center">
-              <QrCode
-                value={getCardUrl()}
-                label={`QR Code for ${card.fullName}`}
-                className="w-48 h-48 sm:w-56 sm:h-56 max-w-full drop-shadow-xs"
-                showLogo={true}
-              />
-            </div>
+          {/* QR Code Presentation - Pure QR Code with no background */}
+          <div className="relative my-5 flex flex-col items-center justify-center">
+            <QrCode
+              value={getCardUrl()}
+              label={`QR Code for ${card.fullName}`}
+              className="w-52 h-52 sm:w-60 sm:h-60 max-w-full"
+              showLogo={true}
+              transparentBg={true}
+            />
 
             {/* Employee ID & Department Badge */}
-            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-1.5 text-xs">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold border border-slate-200/60 dark:border-slate-700/60">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {card.employeeCode}
               </span>

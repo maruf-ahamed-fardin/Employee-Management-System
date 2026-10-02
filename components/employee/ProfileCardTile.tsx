@@ -232,16 +232,15 @@ export function ProfileCardTile({
             </button>
           </div>
 
-          {/* QR Code Presentation */}
+          {/* QR Code Presentation - Pure QR Code with no background */}
           <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
-            <div className="p-2.5 bg-white rounded-2xl shadow-xl border-2 border-indigo-500/30 flex items-center justify-center">
-              <QrCode
-                value={cardUrl}
-                label={`${person.fullName} QR Code`}
-                className="size-36"
-                showLogo={true}
-              />
-            </div>
+            <QrCode
+              value={cardUrl}
+              label={`${person.fullName} QR Code`}
+              className="size-40"
+              showLogo={true}
+              transparentBg={true}
+            />
 
             <p className="mt-3 font-mono font-bold text-sm text-white">
               {person.employeeCode}
