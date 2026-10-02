@@ -62,10 +62,12 @@ export function DialogContent({
   children,
   className,
   containerClassName,
+  hideCloseButton = false,
 }: {
   children: React.ReactNode;
   className?: string;
   containerClassName?: string;
+  hideCloseButton?: boolean;
 }) {
   const context = React.useContext(DialogContext);
   const [mounted, setMounted] = React.useState(false);
@@ -90,13 +92,15 @@ export function DialogContent({
           className
         )}
       >
-        <button
-          onClick={() => context.onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-        >
-          <X className="size-4" />
-          <span className="sr-only">Close</span>
-        </button>
+        {!hideCloseButton && (
+          <button
+            onClick={() => context.onOpenChange(false)}
+            className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          >
+            <X className="size-4" />
+            <span className="sr-only">Close</span>
+          </button>
+        )}
         {children}
       </div>
     </div>,
