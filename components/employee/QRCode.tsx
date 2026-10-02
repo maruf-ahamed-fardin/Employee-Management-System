@@ -17,6 +17,7 @@ export interface QrCodeProps {
   className?: string;
   showLogo?: boolean;
   border?: number;
+  transparentBg?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export function QrCode({
   className = '',
   showLogo = true,
   border = 3,
+  transparentBg = false,
 }: QrCodeProps) {
   const uniqueId = useId().replace(/:/g, '');
   const qr = getQrStructure(value, showLogo, border);
@@ -108,18 +110,26 @@ export function QrCode({
         </filter>
       </defs>
 
-      {/* Pure white background with safe corner radius (never touches modules) */}
-      <rect
-        width={size}
-        height={size}
-        fill="#ffffff"
-        rx={Math.min(2.5, size * 0.05)}
-      />
+      {/* Optional pure white background (omitted if transparentBg is true) */}
+      {!transparentBg && (
+        <rect
+          width={size}
+          height={size}
+          fill="#ffffff"
+          rx={Math.min(2.5, size * 0.05)}
+        />
+      )}
 
-      {/* Dark Slate / Navy-Black Data Modules */}
-      {modulesPath && <path d={modulesPath} fill="#0f172a" />}
+      {/* Data Modules (theme-adaptive when transparentBg is true) */}
+      {modulesPath && (
+        <path
+          d={modulesPath}
+          className={transparentBg ? 'fill-slate-900 dark:fill-white' : undefined}
+          fill={transparentBg ? undefined : '#0f172a'}
+        />
+      )}
 
-      {/* 3 Stylized Finder Eyes: Orange Outer Frame + Dark Navy Pupil */}
+      {/* 3 Stylized Finder Eyes: Orange Outer Frame + Dark Navy/White Pupil */}
       {eyes.map((eye, i) => (
         <g key={i}>
           {/* Outer Ring: 7x7 squircle with 1px stroke (centered at x+0.5, y+0.5) */}
@@ -133,14 +143,15 @@ export function QrCode({
             stroke={`url(#qr-orange-frame-${uniqueId})`}
             strokeWidth={1}
           />
-          {/* Inner Pupil: 3x3 rounded square in dark navy / black */}
+          {/* Inner Pupil: 3x3 rounded square */}
           <rect
             x={eye.x + 2}
             y={eye.y + 2}
             width={3}
             height={3}
             rx={0.95}
-            fill="#0f172a"
+            className={transparentBg ? 'fill-slate-900 dark:fill-white' : undefined}
+            fill={transparentBg ? undefined : '#0f172a'}
           />
         </g>
       ))}
@@ -148,15 +159,16 @@ export function QrCode({
       {/* Center Circular Badge with Orange SeloraX "X" Logo */}
       {showLogo && circleRadius > 0 && (
         <g>
-          {/* Crisp White Circle Badge with subtle outline & shadow */}
+          {/* Crisp Center Circle Badge */}
           <circle
             cx={cx}
             cy={cy}
             r={circleRadius}
-            fill="#ffffff"
-            stroke="#f1f5f9"
+            className={transparentBg ? 'fill-white dark:fill-slate-900 stroke-slate-200 dark:stroke-slate-800' : undefined}
+            fill={transparentBg ? undefined : '#ffffff'}
+            stroke={transparentBg ? undefined : '#f1f5f9'}
             strokeWidth={0.12}
-            filter={`url(#qr-circle-shadow-${uniqueId})`}
+            filter={transparentBg ? undefined : `url(#qr-circle-shadow-${uniqueId})`}
           />
 
           {/* Embedded Orange "X" Logo Mark */}

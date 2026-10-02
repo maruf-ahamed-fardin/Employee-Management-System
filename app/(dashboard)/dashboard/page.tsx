@@ -1,10 +1,54 @@
 import { reportService } from '@/server/services/report.service';
 import { prisma } from '@/lib/db';
 import { DashboardClientView } from '@/components/dashboard/DashboardClientView';
+import { unstable_cache } from 'next/cache';
 
 export const metadata = {
   title: 'Dashboard | SeloraX EMS',
 };
+
+const getCachedLeaveTypes = unstable_cache(
+  async () => prisma.leaveType.findMany({ where: { isActive: true } }),
+  ['dashboard-leave-types'],
+  { revalidate: 120, tags: ['leave-types'] }
+);
+
+const getCachedDepartments = unstable_cache(
+  async () =>
+    prisma.department.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        _count: {
+          select: { employees: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    }),
+  ['dashboard-departments'],
+  { revalidate: 60, tags: ['departments'] }
+);
+
+const getCachedOverviewEmployees = unstable_cache(
+  async () =>
+    prisma.employee.findMany({
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        photoUrl: true,
+        department: { select: { name: true } },
+        position: { select: { title: true } },
+      },
+      orderBy: { firstName: 'asc' },
+      take: 60,
+    }),
+  ['dashboard-overview-employees'],
+  { revalidate: 30, tags: ['employees'] }
+);
 
 export default async function DashboardPage() {
   const [metrics, leaveTypes, employees, rawDepartments] = await Promise.all([
@@ -22,31 +66,9 @@ export default async function DashboardPage() {
       },
       recentEmployees: [],
     })),
-    prisma.leaveType.findMany({ where: { isActive: true } }),
-    prisma.employee.findMany({
-      select: {
-        id: true,
-        employeeCode: true,
-        firstName: true,
-        lastName: true,
-        photoUrl: true,
-        department: { select: { name: true } },
-        position: { select: { title: true } },
-      },
-      orderBy: { firstName: 'asc' },
-    }),
-    prisma.department.findMany({
-      where: { isActive: true, deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        _count: {
-          select: { employees: true },
-        },
-      },
-      orderBy: { name: 'asc' },
-    }),
+    getCachedLeaveTypes(),
+    getCachedOverviewEmployees(),
+    getCachedDepartments(),
   ]);
 
   const departments = rawDepartments.map((dept) => ({

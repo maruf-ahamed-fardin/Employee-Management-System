@@ -100,6 +100,7 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className="flex flex-col items-center justify-center py-1 px-1.5 min-w-[56px] transition-all select-none active:scale-95 group focus:outline-none"
             >
               {/* Colorful Icon Container (Balanced Size for all 5 buttons) */}

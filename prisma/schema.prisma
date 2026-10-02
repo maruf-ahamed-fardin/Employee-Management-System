@@ -179,6 +179,13 @@ model Employee {
   assets         Asset[]
   onboardingTasks OnboardingTask[]
   receivedKudos   Kudos[]
+  tickets         HelpdeskTicket[] @relation("EmployeeTickets")
+  assignedTickets HelpdeskTicket[] @relation("AssignedTickets")
+
+  @@index([status])
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([createdAt])
 }
 
 // ─── Team Profile (Digital Business Card / vCard / NFC) ───────────────────────
@@ -227,6 +234,8 @@ model Attendance {
   records  AttendanceRecord[]
 
   @@unique([employeeId, workDate])
+  @@index([workDate])
+  @@index([status])
 }
 
 model AttendanceRecord {
@@ -309,6 +318,10 @@ model LeaveRequest {
   employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
   reviewedByUser User?     @relation("ReviewedLeaveRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([employeeId])
+  @@index([leaveTypeId])
 }
 
 // ─── Payroll ──────────────────────────────────────────────────────────────────
@@ -550,4 +563,31 @@ model Kudos {
 
   @@index([receiverId])
 }
+
+// ─── HR Helpdesk & Employee Requests ──────────────────────────────────────────
+
+model HelpdeskTicket {
+  id           String    @id @default(uuid())
+  ticketNumber String    @unique // e.g. TKT-1001
+  title        String
+  category     String    // SALARY_CERTIFICATE, LEAVE_QUERY, EXPENSE_ISSUE, IT_HARDWARE, WORKPLACE_GENERAL, OTHER
+  priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status       String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  description  String
+  employeeId   String
+  assignedToId String?
+  resolution   String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee   Employee  @relation("EmployeeTickets", fields: [employeeId], references: [id], onDelete: Cascade)
+  assignedTo Employee? @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([employeeId])
+  @@index([category])
+  @@index([priority])
+}
+
 
