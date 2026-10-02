@@ -1,371 +1,341 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Activity,
+  Sparkles,
+  ArrowRight,
   Clock,
+  Users,
   CheckCircle2,
-  AlertCircle,
   Zap,
+  Building2,
+  ShieldCheck,
 } from 'lucide-react';
 
-interface DayMetric {
-  id: string;
-  day: string;
-  date: string;
-  present: number;
-  total: number;
-  onTime: number;
-  late: number;
-  absent: number;
-  rate: number;
-  peakHour: string;
-  isToday?: boolean;
+interface MetricRing {
+  id: 'presence' | 'punctuality' | 'capacity';
+  label: string;
+  value: number;
+  displayValue: string;
+  sublabel: string;
+  color: string;
+  gradientId: string;
+  filterId: string;
+  r: number;
+  strokeWidth: number;
+  circumference: number;
 }
 
-const weeklyData: DayMetric[] = [
-  { id: 'mon', day: 'Mon', date: 'Sep 28', present: 43, total: 45, onTime: 39, late: 4, absent: 2, rate: 95.5, peakHour: '09:12 AM' },
-  { id: 'tue', day: 'Tue', date: 'Sep 29', present: 45, total: 45, onTime: 43, late: 2, absent: 0, rate: 100.0, peakHour: '08:55 AM' },
-  { id: 'wed', day: 'Wed', date: 'Sep 30', present: 45, total: 45, onTime: 42, late: 3, absent: 0, rate: 100.0, peakHour: '09:04 AM' },
-  { id: 'thu', day: 'Thu', date: 'Oct 01', present: 42, total: 45, onTime: 38, late: 4, absent: 3, rate: 93.3, peakHour: '09:25 AM' },
-  { id: 'fri', day: 'Fri', date: 'Oct 02', present: 44, total: 45, onTime: 40, late: 4, absent: 1, rate: 97.8, peakHour: '09:10 AM', isToday: true },
-  { id: 'sat', day: 'Sat', date: 'Oct 03', present: 14, total: 15, onTime: 13, late: 1, absent: 1, rate: 93.3, peakHour: '10:00 AM' },
+const ringsConfig: MetricRing[] = [
+  {
+    id: 'presence',
+    label: 'Total Presence',
+    value: 96.4,
+    displayValue: '44 / 45 Active',
+    sublabel: '96.4% Staff Checked-In',
+    color: '#06b6d4',
+    gradientId: 'radial-cyan-grad',
+    filterId: 'glow-cyan',
+    r: 92,
+    strokeWidth: 10,
+    circumference: 2 * Math.PI * 92, // ~578.05
+  },
+  {
+    id: 'punctuality',
+    label: 'Punctuality Rate',
+    value: 92.8,
+    displayValue: '41 On-Time',
+    sublabel: '92.8% Arrived < 09:15 AM',
+    color: '#6366f1',
+    gradientId: 'radial-indigo-grad',
+    filterId: 'glow-indigo',
+    r: 74,
+    strokeWidth: 10,
+    circumference: 2 * Math.PI * 74, // ~464.96
+  },
+  {
+    id: 'capacity',
+    label: 'Core Shift Capacity',
+    value: 88.0,
+    displayValue: '10A – 4P Overlap',
+    sublabel: '88% Peak Shift Coverage',
+    color: '#f37021',
+    gradientId: 'radial-orange-grad',
+    filterId: 'glow-orange',
+    r: 56,
+    strokeWidth: 10,
+    circumference: 2 * Math.PI * 56, // ~351.86
+  },
 ];
 
-const hourlyFlowToday = [
-  { time: '08:00 AM', count: 5, pct: 23, label: 'Early Birds' },
-  { time: '08:30 AM', count: 14, pct: 64, label: 'Morning Surge' },
-  { time: '09:00 AM', count: 22, pct: 100, label: 'Peak Check-in', isPeak: true },
-  { time: '09:30 AM', count: 3, pct: 14, label: 'Late Shift' },
-  { time: '10:00 AM', count: 1, pct: 5, label: 'Exceptions' },
+const departmentsData = [
+  { name: 'Engineering & Dev', active: 18, total: 18, rate: 100, onTime: 17, late: 1, color: 'from-cyan-400 to-blue-500' },
+  { name: 'Product & UX Design', active: 8, total: 8, rate: 100, onTime: 8, late: 0, color: 'from-indigo-400 to-purple-500' },
+  { name: 'Marketing & Sales', active: 8, total: 9, rate: 89, onTime: 7, late: 1, color: 'from-[#f37021] to-amber-500' },
+  { name: 'People & Operations', active: 7, total: 7, rate: 100, onTime: 7, late: 0, color: 'from-emerald-400 to-teal-500' },
+  { name: 'Finance & Strategy', active: 3, total: 3, rate: 100, onTime: 3, late: 0, color: 'from-purple-400 to-pink-500' },
 ];
 
 export function AttendanceChart() {
-  const [selectedDayId, setSelectedDayId] = useState<string>('fri');
-  const [viewMode, setViewMode] = useState<'weekly' | 'hourly'>('weekly');
+  const [activeRingId, setActiveRingId] = useState<'presence' | 'punctuality' | 'capacity'>('presence');
 
-  const selectedDay = weeklyData.find((d) => d.id === selectedDayId) || weeklyData[4];
+  const activeRing = ringsConfig.find((r) => r.id === activeRingId) || ringsConfig[0];
 
   return (
-    <div className="col-span-full lg:col-span-8 rounded-2xl sm:rounded-3xl border border-white/10 dark:border-white/8 bg-[#0c1222]/85 backdrop-blur-2xl p-3.5 sm:p-6 shadow-xl shadow-black/40 flex flex-col justify-between relative overflow-hidden group">
-      {/* Background Subtle Gradient Glow Orbs */}
-      <div className="pointer-events-none absolute -top-24 -left-20 size-72 rounded-full bg-indigo-600/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-20 size-72 rounded-full bg-[#f37021]/10 blur-3xl" />
+    <div className="col-span-full lg:col-span-8 rounded-3xl border border-white/10 dark:border-white/8 bg-[#090d16]/90 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl shadow-black/50 flex flex-col justify-between relative overflow-hidden group">
+      {/* Background Soft Ambient Glows */}
+      <div className="pointer-events-none absolute -top-28 -left-20 size-80 rounded-full bg-cyan-600/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 -right-20 size-80 rounded-full bg-[#f37021]/10 blur-3xl" />
 
-      {/* ─── 1. Header Bar: Title, Live Pulse & View Switcher ─────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 sm:pb-4 border-b border-white/5 relative z-10">
-        <div className="flex items-center justify-between sm:justify-start gap-2.5">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="size-8 sm:size-10 rounded-xl bg-gradient-to-br from-[#252175] to-[#f37021]/70 p-0.5 shadow-md shadow-[#252175]/30 ring-1 ring-white/15 shrink-0 flex items-center justify-center text-white">
-              <Activity className="size-4 sm:size-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
-                  Attendance Velocity
-                </h3>
-              </div>
-              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
-                Weekly presence & punctuality telemetry
-              </p>
-            </div>
+      {/* ─── 1. Header Bar with Cockpit Telemetry Badge ───────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="size-10 sm:size-11 rounded-2xl bg-gradient-to-br from-[#252175] via-[#4338ca] to-[#f37021]/80 p-0.5 shadow-lg shadow-[#252175]/40 ring-1 ring-white/20 shrink-0 flex items-center justify-center text-white">
+            <Activity className="size-5" />
           </div>
-
-          <span className="sm:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            96.4%
-          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                Workforce Biometric & Attendance HUD
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Concentric multi-ring telemetry and real-time team distribution
+            </p>
+          </div>
         </div>
 
-        {/* View Switcher: Weekly Equalizer vs Today's Inflow */}
-        <div className="flex items-center justify-between sm:justify-end gap-2">
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            96.4% Live Optimal
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 shadow-xs">
+            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+            Live Synced
           </span>
 
-          <div className="flex items-center gap-1 bg-white/5 p-0.5 sm:p-1 rounded-xl border border-white/10 text-xs w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setViewMode('weekly')}
-              className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer text-center ${
-                viewMode === 'weekly'
-                  ? 'bg-[#182238] text-white shadow-sm border border-white/15'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Weekly Equalizer
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('hourly')}
-              className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer text-center ${
-                viewMode === 'hourly'
-                  ? 'bg-[#182238] text-white shadow-sm border border-white/15'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Today&apos;s Inflow
-            </button>
-          </div>
+          <Link
+            href="/attendance"
+            className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1 rounded-full border border-white/10 transition-colors"
+          >
+            <span>Live Punch Log</span>
+            <ArrowRight className="size-3" />
+          </Link>
         </div>
       </div>
 
-      {/* ─── 2. Compact Executive HUD Strip ─────────────────────────────────── */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2.5 py-2.5 sm:py-3.5 relative z-10">
-        <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/5 bg-white/[0.03] backdrop-blur-md">
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-            Avg Attendance
-          </span>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1">
-            <span className="text-sm sm:text-lg font-black font-mono text-white">96.4%</span>
-            <span className="text-[9px] sm:text-[10px] font-bold text-emerald-400 font-mono">+2.1%</span>
-          </div>
-        </div>
+      {/* ─── 2. Main Visual Canvas: Multi-Ring Radial Gauge + Department Feed ── */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 my-4 relative z-10 items-center">
+        {/* Left: Concentric 3-Ring Radial Gauge (Tesla / Apple Watch style) */}
+        <div className="md:col-span-6 lg:col-span-5 flex flex-col items-center justify-center">
+          <div className="relative size-60 sm:size-64 flex items-center justify-center">
+            {/* SVG Concentric Rings */}
+            <svg
+              className="size-full -rotate-90 transform overflow-visible"
+              viewBox="0 0 240 240"
+            >
+              <defs>
+                {/* Cyan Gradient */}
+                <linearGradient id="radial-cyan-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#22d3ee" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
 
-        <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/5 bg-white/[0.03] backdrop-blur-md">
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-            Punctuality
-          </span>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1">
-            <span className="text-sm sm:text-lg font-black font-mono text-emerald-400">92.8%</span>
-            <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono hidden sm:inline">on-time</span>
-          </div>
-        </div>
+                {/* Indigo Gradient */}
+                <linearGradient id="radial-indigo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#818cf8" />
+                  <stop offset="100%" stopColor="#c084fc" />
+                </linearGradient>
 
-        <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/5 bg-white/[0.03] backdrop-blur-md">
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-            Peak Arrival
-          </span>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1">
-            <span className="text-sm sm:text-lg font-black font-mono text-[#f37021]">09:00 AM</span>
-            <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono hidden sm:inline">22 staff</span>
-          </div>
-        </div>
+                {/* SeloraX Orange Gradient */}
+                <linearGradient id="radial-orange-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#f37021" />
+                  <stop offset="100%" stopColor="#fb923c" />
+                </linearGradient>
 
-        <div className="hidden sm:block p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/5 bg-white/[0.03] backdrop-blur-md">
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-            Core Overlap
-          </span>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1">
-            <span className="text-sm sm:text-lg font-black font-mono text-indigo-400">10A – 4P</span>
-            <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono">100% cap</span>
-          </div>
-        </div>
-      </div>
+                {/* Neon Glow Filters */}
+                <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.6" />
+                </filter>
+                <filter id="glow-indigo" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#6366f1" floodOpacity="0.6" />
+                </filter>
+                <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#f37021" floodOpacity="0.7" />
+                </filter>
+              </defs>
 
-      {/* ─── 3. Main Equalizer Canvas ───────────────────────────────────────── */}
-      <div className="my-1 sm:my-2 p-2.5 sm:p-5 rounded-2xl border border-white/5 bg-black/20 backdrop-blur-md relative z-10">
-        {viewMode === 'weekly' ? (
-          <div className="space-y-3 sm:space-y-4">
-            {/* Equalizer Grid Canvas */}
-            <div className="h-44 sm:h-52 w-full flex items-end justify-between gap-1.5 sm:gap-4 px-1 sm:px-4 relative">
-              {/* Background Guideline Marks (Clean & Non-overlapping) */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col justify-between h-full select-none">
-                <div className="border-b border-white/[0.04] w-full flex items-center justify-between pb-1">
-                  <span className="hidden sm:inline text-[9px] font-mono text-slate-600">100%</span>
-                  <span className="text-[9px] font-mono text-slate-600/70 ml-auto">Target Line (95%)</span>
-                </div>
-                <div className="border-b border-white/[0.04] w-full pb-1">
-                  <span className="hidden sm:inline text-[9px] font-mono text-slate-600">75%</span>
-                </div>
-                <div className="border-b border-white/[0.04] w-full pb-1">
-                  <span className="hidden sm:inline text-[9px] font-mono text-slate-600">50%</span>
-                </div>
-                <div className="border-b border-white/[0.04] w-full pb-1">
-                  <span className="hidden sm:inline text-[9px] font-mono text-slate-600">25%</span>
-                </div>
-              </div>
+              {/* 3 Dark Background Inset Tracks */}
+              {ringsConfig.map((ring) => (
+                <circle
+                  key={`bg-${ring.id}`}
+                  cx="120"
+                  cy="120"
+                  r={ring.r}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeOpacity="0.06"
+                  strokeWidth={ring.strokeWidth}
+                />
+              ))}
 
-              {/* Dynamic Vertical Equalizer Columns */}
-              {weeklyData.map((d) => {
-                const isSelected = d.id === selectedDayId;
-                const onTimePct = (d.onTime / d.total) * 100;
-                const latePct = (d.late / d.total) * 100;
+              {/* 3 Active Glowing Concentric Arcs */}
+              {ringsConfig.map((ring) => {
+                const isSelected = ring.id === activeRingId;
+                const offset = ring.circumference * (1 - ring.value / 100);
 
                 return (
-                  <div
-                    key={d.id}
-                    onClick={() => setSelectedDayId(d.id)}
-                    className="flex-1 flex flex-col items-center justify-end h-full group/bar cursor-pointer relative z-10 touch-manipulation select-none"
-                  >
-                    {/* Floating Pill on Hover / Selected */}
-                    <div
-                      className={`mb-1.5 sm:mb-2 transition-all duration-200 ${
-                        isSelected
-                          ? 'opacity-100 scale-100'
-                          : 'opacity-0 group-hover/bar:opacity-100 group-hover/bar:scale-100 scale-90'
-                      }`}
-                    >
-                      <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-[#141b2d] text-white border border-white/20 shadow-xl whitespace-nowrap">
-                        {d.rate}%
-                      </span>
-                    </div>
-
-                    {/* Vertical Pill Track */}
-                    <div
-                      className={`w-7 sm:w-10 md:w-12 h-28 sm:h-36 rounded-xl sm:rounded-2xl bg-white/[0.03] border transition-all duration-300 relative flex flex-col justify-end p-0.5 sm:p-1 overflow-hidden ${
-                        isSelected
-                          ? 'border-indigo-400/70 bg-white/[0.08] shadow-[0_0_20px_rgba(99,102,241,0.3)] ring-2 ring-indigo-500/25'
-                          : 'border-white/5 group-hover/bar:border-white/20 group-hover/bar:bg-white/[0.05]'
-                      }`}
-                    >
-                      {/* Late Cap (Orange Neon) */}
-                      {d.late > 0 && (
-                        <div
-                          style={{ height: `${latePct}%` }}
-                          className="w-full rounded-t-lg sm:rounded-t-xl bg-gradient-to-t from-[#f37021] to-amber-400 shadow-[0_0_10px_rgba(243,112,33,0.5)] transition-all duration-500 mb-0.5"
-                          title={`Late: ${d.late} staff`}
-                        />
-                      )}
-
-                      {/* On-Time Main Column (Indigo to Cyan Glow) */}
-                      <div
-                        style={{ height: `${onTimePct}%` }}
-                        className="w-full rounded-b-lg sm:rounded-b-xl bg-gradient-to-t from-[#252175] via-indigo-500 to-cyan-400 shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all duration-500 flex flex-col justify-between items-center py-1"
-                        title={`On-time: ${d.onTime} staff`}
-                      >
-                        {/* Glowing cap highlight dot */}
-                        <span className="size-1 rounded-full bg-white/90 shadow-[0_0_6px_#fff]" />
-                      </div>
-                    </div>
-
-                    {/* Bottom Label & Date Badge */}
-                    <div className="mt-2 text-center">
-                      <p
-                        className={`text-[11px] sm:text-xs font-bold transition-colors ${
-                          isSelected ? 'text-white' : 'text-slate-400 group-hover/bar:text-slate-200'
-                        }`}
-                      >
-                        {d.day}
-                      </p>
-                      <span
-                        className={`text-[9px] sm:text-[10px] font-mono block mt-0.5 ${
-                          d.isToday
-                            ? 'text-emerald-400 font-bold px-1 rounded-full bg-emerald-500/10 border border-emerald-500/20'
-                            : 'text-slate-500'
-                        }`}
-                      >
-                        {d.isToday ? 'TODAY' : d.date.split(' ')[1]}
-                      </span>
-                    </div>
-                  </div>
+                  <circle
+                    key={`active-${ring.id}`}
+                    cx="120"
+                    cy="120"
+                    r={ring.r}
+                    fill="none"
+                    stroke={`url(#${ring.gradientId})`}
+                    strokeWidth={isSelected ? ring.strokeWidth + 2 : ring.strokeWidth}
+                    strokeDasharray={ring.circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    filter={`url(#${ring.filterId})`}
+                    className="transition-all duration-700 ease-out cursor-pointer hover:opacity-100"
+                    opacity={isSelected ? 1 : 0.8}
+                    onClick={() => setActiveRingId(ring.id)}
+                  />
                 );
               })}
-            </div>
+            </svg>
 
-            {/* Selected Day Tactical Telemetry Card (Fully Mobile-Friendly) */}
-            <div className="mt-2.5 sm:mt-4 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 text-xs">
-              <div className="flex items-center justify-between sm:justify-start gap-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="size-7 sm:size-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold font-mono text-xs">
-                    {selectedDay.day}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white text-xs leading-none">
-                      {selectedDay.date} Telemetry
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Peak check-in at <span className="text-[#f37021] font-mono font-bold">{selectedDay.peakHour}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-                  {selectedDay.present}/{selectedDay.total} Active
-                </span>
-              </div>
-
-              {/* 3 Telemetry Badges */}
-              <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center sm:gap-4 text-xs font-mono pt-1 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                <div className="flex items-center justify-center sm:justify-start gap-1 p-1 sm:p-0 rounded bg-white/[0.02] sm:bg-transparent">
-                  <CheckCircle2 className="size-3 text-emerald-400 shrink-0" />
-                  <span className="text-white font-bold">{selectedDay.onTime}</span>
-                  <span className="text-slate-400 text-[10px]">On-Time</span>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start gap-1 p-1 sm:p-0 rounded bg-white/[0.02] sm:bg-transparent">
-                  <AlertCircle className="size-3 text-[#f37021] shrink-0" />
-                  <span className="text-white font-bold">{selectedDay.late}</span>
-                  <span className="text-slate-400 text-[10px]">Late</span>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start gap-1 p-1 sm:p-0 rounded bg-white/[0.02] sm:bg-transparent">
-                  <Clock className="size-3 text-indigo-400 shrink-0" />
-                  <span className="text-emerald-400 font-bold">{selectedDay.rate}%</span>
-                  <span className="text-slate-400 text-[10px]">Rate</span>
-                </div>
-              </div>
+            {/* Glowing Digital HUD Center Core */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none select-none">
+              <span className="text-3xl sm:text-4xl font-black font-mono text-white tracking-tight drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+                {activeRing.value}%
+              </span>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-slate-400 mt-0.5">
+                {activeRing.id === 'presence'
+                  ? 'WORKFORCE'
+                  : activeRing.id === 'punctuality'
+                  ? 'ON-TIME'
+                  : 'CAPACITY'}
+              </span>
+              <span
+                style={{ color: activeRing.color }}
+                className="text-[11px] font-mono font-bold mt-1"
+              >
+                {activeRing.displayValue}
+              </span>
             </div>
           </div>
-        ) : (
-          /* Hourly Arrival Flow View for Today */
-          <div className="space-y-3 py-1 sm:py-2">
-            <div className="flex items-center justify-between text-xs text-slate-400 pb-1.5 border-b border-white/5 text-[11px]">
-              <span>Interval (Morning Punch)</span>
-              <span>Inflow Volume</span>
-            </div>
 
-            <div className="space-y-2.5">
-              {hourlyFlowToday.map((h) => (
-                <div key={h.time} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`size-1.5 rounded-full ${
-                          h.isPeak ? 'bg-[#f37021] animate-pulse' : 'bg-indigo-400'
-                        }`}
-                      />
-                      <span className="font-mono font-bold text-white text-[11px]">{h.time}</span>
-                      <span className="text-[10px] text-slate-400 hidden sm:inline">({h.label})</span>
-                    </div>
-                    <span className="font-mono font-bold text-white text-[11px]">
-                      {h.count} staff{' '}
-                      {h.isPeak && (
-                        <span className="text-[9px] text-[#f37021] font-sans font-bold ml-1">
-                          ★ PEAK
-                        </span>
-                      )}
+          {/* Interactive Metric Switcher Pills under the Radial HUD */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3">
+            {ringsConfig.map((r) => {
+              const isSelected = r.id === activeRingId;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setActiveRingId(r.id)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-white/10 text-white border border-white/20 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 bg-white/[0.02] border border-white/5'
+                  }`}
+                >
+                  <span
+                    style={{ backgroundColor: r.color }}
+                    className="size-2 rounded-full shadow-[0_0_6px_currentColor]"
+                  />
+                  <span>{r.label.split(' ')[0]}</span>
+                  <span className="font-mono text-slate-300 font-bold">{r.value}%</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right: Live Department Distribution & Attendance Breakdown */}
+        <div className="md:col-span-6 lg:col-span-7 space-y-3 p-3 sm:p-4 rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-md">
+          <div className="flex items-center justify-between pb-2 border-b border-white/5 text-xs text-slate-400">
+            <span className="font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-slate-300">
+              <Building2 className="size-3.5 text-[#f37021]" />
+              Department Attendance Velocity
+            </span>
+            <span className="text-[11px] font-mono text-emerald-400 font-bold">
+              44 / 45 Checked In
+            </span>
+          </div>
+
+          <div className="space-y-2.5 pt-1">
+            {departmentsData.map((dept) => (
+              <div key={dept.name} className="space-y-1 group/row">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="size-1.5 rounded-full bg-cyan-400 group-hover/row:scale-125 transition-transform" />
+                    <span className="font-medium text-slate-200 truncate group-hover/row:text-white transition-colors">
+                      {dept.name}
                     </span>
                   </div>
 
-                  {/* Horizontal Glowing Bar */}
-                  <div className="h-2.5 w-full rounded-full bg-white/[0.04] p-0.5 border border-white/5">
-                    <div
-                      style={{ width: `${h.pct}%` }}
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        h.isPeak
-                          ? 'bg-gradient-to-r from-indigo-500 via-[#f37021] to-amber-400 shadow-[0_0_12px_rgba(243,112,33,0.6)]'
-                          : 'bg-gradient-to-r from-[#252175] to-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]'
+                  <div className="flex items-center gap-3 font-mono text-xs shrink-0">
+                    <span className="text-slate-400 text-[11px]">
+                      {dept.active}/{dept.total} staff
+                    </span>
+                    <span
+                      className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
+                        dept.rate === 100
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                       }`}
-                    />
+                    >
+                      {dept.rate}%
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Sleek Gradient Capsule Progress Bar */}
+                <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden flex">
+                  <div
+                    style={{ width: `${dept.rate}%` }}
+                    className={`h-full rounded-full bg-gradient-to-r ${dept.color} shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-700`}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+
+          {/* Real-Time Shift Telemetry Note */}
+          <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <Clock className="size-3 text-[#f37021]" />
+              <span>Core Overlap Hours: 10:00 AM – 4:00 PM BST</span>
+            </span>
+            <span className="font-mono text-emerald-400 font-bold hidden sm:inline">
+              100% Coverage
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* ─── 4. Legend & High-Tech Footer ─────────────────────────────────── */}
-      <div className="pt-2 sm:pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 relative z-10">
-        <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 text-[10px] sm:text-[11px]">
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-            <span className="font-medium text-slate-200">On-Time</span>
+      {/* ─── 3. Executive Footer: Biometric Health & Shift Indicator ────────── */}
+      <div className="pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-slate-400 relative z-10">
+        <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <ShieldCheck className="size-3.5 text-emerald-400" />
+            <span>Biometric Engine: Active & Enforced</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-[#f37021] shadow-[0_0_8px_rgba(243,112,33,0.6)]" />
-            <span className="font-medium text-slate-200">Late (&gt;15m)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-slate-600" />
-            <span className="text-slate-400">Absent</span>
+          <span className="text-white/20">·</span>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <Zap className="size-3 text-[#f37021]" />
+            <span>Auto-Calculated Payroll Shift</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 self-end sm:self-auto">
-          <Zap className="size-3 text-emerald-400" />
-          <span>Biometric Live Feed</span>
-        </div>
+        <Link
+          href="/attendance"
+          className="text-primary hover:text-white font-semibold text-[11px] flex items-center gap-1 transition-colors self-end sm:self-auto"
+        >
+          <span>Deep-dive Analytics</span>
+          <ArrowRight className="size-3" />
+        </Link>
       </div>
     </div>
   );
