@@ -383,7 +383,7 @@ export function LinearTaskModal({
               </button>
 
               {activeDropdown === 'assignee' && (
-                <div className="absolute left-0 top-full mt-1.5 w-64 rounded-xl border border-white/15 bg-[#141b2d] shadow-2xl backdrop-blur-2xl z-50 p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-64 max-w-[calc(100vw-3.5rem)] rounded-xl border border-white/15 bg-[#141b2d] shadow-2xl backdrop-blur-2xl z-50 p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-slate-400" />
                     <input
@@ -451,7 +451,7 @@ export function LinearTaskModal({
               </button>
 
               {activeDropdown === 'date' && (
-                <div className="absolute left-0 top-full mt-1.5 w-52 rounded-xl border border-white/15 bg-[#141b2d] shadow-2xl backdrop-blur-2xl z-50 p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-52 max-w-[calc(100vw-3.5rem)] rounded-xl border border-white/15 bg-[#141b2d] shadow-2xl backdrop-blur-2xl z-50 p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-100">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Set Due Date
                   </div>
@@ -497,7 +497,7 @@ export function LinearTaskModal({
               </button>
 
               {activeDropdown === 'category' && (
-                <div className="absolute left-0 top-full mt-1.5 w-48 rounded-xl border border-white/15 bg-[#141b2d] shadow-2xl backdrop-blur-2xl z-50 p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-48 max-w-[calc(100vw-3.5rem)] rounded-xl border border-white/15 bg-[#141b2d] shadow-2xl backdrop-blur-2xl z-50 p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Category Tag
                   </div>
@@ -532,7 +532,7 @@ export function LinearTaskModal({
         </div>
 
         {/* Linear Bottom Footer Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-white/8 bg-[#090e18]/80 rounded-b-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-white/8 bg-[#090e18]/80 rounded-b-2xl">
           {/* Create More toggle */}
           <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-400 hover:text-slate-200 transition-colors">
             <input
