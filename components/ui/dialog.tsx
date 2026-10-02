@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/format';
 
@@ -60,15 +61,25 @@ export function DialogTrigger({
 export function DialogContent({
   children,
   className,
+  containerClassName,
+  hideCloseButton = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  containerClassName?: string;
+  hideCloseButton?: boolean;
 }) {
   const context = React.useContext(DialogContext);
-  if (!context?.open) return null;
+  const [mounted, setMounted] = React.useState(false);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!context?.open || !mounted) return null;
+
+  return createPortal(
+    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4', containerClassName)}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
@@ -81,16 +92,19 @@ export function DialogContent({
           className
         )}
       >
-        <button
-          onClick={() => context.onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-        >
-          <X className="size-4" />
-          <span className="sr-only">Close</span>
-        </button>
+        {!hideCloseButton && (
+          <button
+            onClick={() => context.onOpenChange(false)}
+            className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          >
+            <X className="size-4" />
+            <span className="sr-only">Close</span>
+          </button>
+        )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -130,29 +130,58 @@ export function CommandSearch() {
 
       {/* Modal Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="top-[18%] translate-y-0 p-0 overflow-hidden sm:max-w-xl bg-card border-border shadow-2xl">
+        <DialogContent
+          containerClassName="items-start pt-[10vh] sm:pt-[15vh]"
+          hideCloseButton
+          className="p-0 overflow-hidden sm:max-w-xl bg-card border-border shadow-2xl"
+        >
           <DialogTitle className="sr-only">Quick Search</DialogTitle>
           <DialogDescription className="sr-only">
             Find colleagues, departments, job positions, and navigate pages
           </DialogDescription>
 
-          <div className="relative border-b border-border/80 p-3 sm:p-4 bg-background">
-            <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 size-4 text-primary" />
+          <div className="relative flex items-center border-b border-border/80 px-3 sm:px-4 py-2 sm:py-2.5 bg-background">
+            <Search className="size-4 text-primary shrink-0 mr-2.5" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search colleagues, departments, positions, or features..."
-              className="pl-9 pr-8 h-10 border-0 shadow-none focus-visible:ring-0 text-sm bg-transparent"
+              placeholder="Search colleagues, departments, positions..."
+              className="h-9 border-0 shadow-none focus-visible:ring-0 text-sm bg-transparent px-0 flex-1"
               autoFocus
             />
             {query && (
               <button
+                type="button"
                 onClick={() => setQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear query"
+                className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors mr-1 cursor-pointer"
               >
-                <X className="size-4" />
+                <X className="size-3.5" />
               </button>
             )}
+            {/* Mobile Cancel Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setQuery('');
+              }}
+              className="sm:hidden px-2 py-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            {/* Desktop Close Icon */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setQuery('');
+              }}
+              className="hidden sm:flex size-7 rounded-lg items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+              title="Close (Esc)"
+            >
+              <X className="size-4" />
+            </button>
           </div>
 
           <div className="max-h-[380px] overflow-y-auto p-2 sm:p-3 space-y-4">
@@ -295,9 +324,29 @@ export function CommandSearch() {
             )}
           </div>
 
-          <div className="border-t border-border/60 bg-muted/30 px-4 py-2 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>Press Esc to close</span>
-            <span className="flex items-center gap-1">
+          <div className="border-t border-border/60 bg-muted/30 px-3.5 sm:px-4 py-2 flex items-center justify-between text-[11px] text-muted-foreground">
+            {/* Desktop: Keyboard shortcut indicator */}
+            <span className="hidden sm:inline-flex items-center gap-1.5">
+              <span>Press</span>
+              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-border/70 bg-background shadow-xs font-semibold">
+                Esc
+              </kbd>
+              <span>to close</span>
+            </span>
+
+            {/* Mobile: Touch indicator */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setQuery('');
+              }}
+              className="sm:hidden inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+            >
+              <span>Tap to close</span>
+            </button>
+
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px]">
               <Sparkles className="size-3 text-[#F37021]" />
               <span>SeloraX Quick Command</span>
             </span>

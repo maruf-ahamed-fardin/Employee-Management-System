@@ -183,6 +183,7 @@ export function LinearTaskModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        hideCloseButton
         className="sm:max-w-2xl p-0 overflow-visible bg-[#0d121f] text-slate-100 border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-2xl"
       >
         <div onKeyDown={handleKeyDown} className="focus:outline-none">
