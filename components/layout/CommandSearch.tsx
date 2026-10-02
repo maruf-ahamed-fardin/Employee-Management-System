@@ -130,7 +130,10 @@ export function CommandSearch() {
 
       {/* Modal Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="top-[18%] translate-y-0 p-0 overflow-hidden sm:max-w-xl bg-card border-border shadow-2xl">
+        <DialogContent
+          containerClassName="items-start pt-[10vh] sm:pt-[15vh]"
+          className="p-0 overflow-hidden sm:max-w-xl bg-card border-border shadow-2xl"
+        >
           <DialogTitle className="sr-only">Quick Search</DialogTitle>
           <DialogDescription className="sr-only">
             Find colleagues, departments, job positions, and navigate pages
