@@ -41,7 +41,7 @@ export function MobileNav() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-3 space-y-3">
+        <div className="flex-1 overflow-y-auto py-3 space-y-3 scrollbar-none">
           {(['Workspace', 'Finance & Operations', 'Organization', 'Administration'] as const).map((sectionName) => {
             const sectionItems = navigationConfig.filter(
               (item) => item.section === sectionName && (!item.roles || item.roles.includes(userRole))
