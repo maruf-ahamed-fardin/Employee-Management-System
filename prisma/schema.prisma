@@ -179,6 +179,11 @@ model Employee {
   assets         Asset[]
   onboardingTasks OnboardingTask[]
   receivedKudos   Kudos[]
+
+  @@index([status])
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([createdAt])
 }
 
 // ─── Team Profile (Digital Business Card / vCard / NFC) ───────────────────────
@@ -227,6 +232,8 @@ model Attendance {
   records  AttendanceRecord[]
 
   @@unique([employeeId, workDate])
+  @@index([workDate])
+  @@index([status])
 }
 
 model AttendanceRecord {
@@ -309,6 +316,10 @@ model LeaveRequest {
   employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
   reviewedByUser User?     @relation("ReviewedLeaveRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([employeeId])
+  @@index([leaveTypeId])
 }
 
 // ─── Payroll ──────────────────────────────────────────────────────────────────
