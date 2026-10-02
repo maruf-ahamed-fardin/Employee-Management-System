@@ -13,18 +13,16 @@ import {
   Flag,
   Tag,
   User,
-  MoreVertical,
   Trash2,
-  Edit3,
-  ArrowRight,
-  ArrowLeft,
   Sparkles,
   Flame,
   CheckSquare,
   Circle,
-  Eye,
-  SlidersHorizontal,
+  LayoutList,
+  Kanban,
   X,
+  ChevronRight,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,65 +69,56 @@ export interface EmployeeOption {
   positionTitle?: string;
 }
 
-interface ColumnConfig {
-  id: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
-  label: string;
-  icon: React.ElementType;
-  badgeClass: string;
-  headerBorder: string;
-}
-
-const COLUMNS: ColumnConfig[] = [
-  {
-    id: 'TODO',
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; badge: string; dot: string; icon: React.ElementType }
+> = {
+  TODO: {
     label: 'To Do',
+    badge: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
+    dot: 'bg-slate-400',
     icon: ListTodo,
-    badgeClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20',
-    headerBorder: 'border-slate-500/40',
   },
-  {
-    id: 'IN_PROGRESS',
+  IN_PROGRESS: {
     label: 'In Progress',
+    badge: 'bg-[#f37021]/10 text-[#f37021] dark:text-[#fb923c] border-[#f37021]/30 font-medium',
+    dot: 'bg-[#f37021]',
     icon: Clock,
-    badgeClass: 'bg-[#f37021]/15 text-[#ea580c] dark:text-[#fb923c] border-[#f37021]/30',
-    headerBorder: 'border-[#f37021]/40',
   },
-  {
-    id: 'IN_REVIEW',
+  IN_REVIEW: {
     label: 'In Review',
-    icon: Eye,
-    badgeClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/30',
-    headerBorder: 'border-purple-500/40',
+    badge: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+    dot: 'bg-purple-400',
+    icon: Clock,
   },
-  {
-    id: 'DONE',
+  DONE: {
     label: 'Completed',
+    badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 font-medium',
+    dot: 'bg-emerald-500',
     icon: CheckCircle2,
-    badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30',
-    headerBorder: 'border-emerald-500/40',
   },
-];
+};
 
-const PRIORITY_THEME: Record<string, { label: string; badge: string; border: string }> = {
+const PRIORITY_CONFIG: Record<string, { label: string; badge: string; color: string }> = {
   URGENT: {
     label: 'Urgent',
-    badge: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 font-bold',
-    border: 'hover:border-rose-500/50 hover:shadow-rose-500/10',
+    badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 font-bold',
+    color: 'text-rose-500',
   },
   HIGH: {
     label: 'High',
-    badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold',
-    border: 'hover:border-amber-500/50 hover:shadow-amber-500/10',
+    badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-medium',
+    color: 'text-amber-500',
   },
   MEDIUM: {
     label: 'Medium',
-    badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    border: 'hover:border-blue-500/50 hover:shadow-blue-500/10',
+    badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    color: 'text-blue-500',
   },
   LOW: {
     label: 'Low',
-    badge: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30',
-    border: 'hover:border-slate-500/50 hover:shadow-slate-500/10',
+    badge: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
+    color: 'text-slate-400',
   },
 };
 
@@ -141,14 +130,14 @@ export function TasksKanbanClient({
   employees: EmployeeOption[];
 }) {
   const [tasks, setTasks] = useState<TaskItem[]>(initialTasks);
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+  const [statusTab, setStatusTab] = useState<string>('ALL');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
-  const [todayFocus, setTodayFocus] = useState<boolean>(false);
 
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [targetColumnForCreate, setTargetColumnForCreate] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'>('TODO');
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
 
   // Create Form State
@@ -156,131 +145,99 @@ export function TasksKanbanClient({
   const [newDescription, setNewDescription] = useState('');
   const [newEmployeeId, setNewEmployeeId] = useState(employees[0]?.id || '');
   const [newPriority, setNewPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [newStatus, setNewStatus] = useState<'TODO' | 'IN_PROGRESS' | 'DONE'>('TODO');
   const [newCategory, setNewCategory] = useState('General');
   const [newDueDate, setNewDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Metrics computation
-  const metrics = useMemo(() => {
+  // Metrics
+  const counts = useMemo(() => {
     const total = tasks.length;
-    const completed = tasks.filter((t) => t.status === 'DONE').length;
-    const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
-    const inReview = tasks.filter((t) => t.status === 'IN_REVIEW').length;
     const todo = tasks.filter((t) => t.status === 'TODO').length;
-
-    const now = new Date();
-    const urgentOrOverdue = tasks.filter((t) => {
-      if (t.status === 'DONE') return false;
-      if (t.priority === 'URGENT') return true;
-      if (t.dueDate) {
-        return new Date(t.dueDate).getTime() < now.getTime();
-      }
-      return false;
+    const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW').length;
+    const done = tasks.filter((t) => t.status === 'DONE').length;
+    const overdue = tasks.filter((t) => {
+      if (t.status === 'DONE' || !t.dueDate) return false;
+      return new Date(t.dueDate).getTime() < Date.now();
     }).length;
 
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    return { total, completed, inProgress, inReview, todo, urgentOrOverdue, completionRate };
+    return { total, todo, inProgress, done, overdue };
   }, [tasks]);
 
-  // Employee workload mapping (count active tasks per employee)
-  const employeeTaskCounts = useMemo(() => {
-    const map: Record<string, number> = {};
-    tasks.forEach((t) => {
-      if (t.status !== 'DONE') {
-        map[t.employeeId] = (map[t.employeeId] || 0) + 1;
-      }
-    });
-    return map;
-  }, [tasks]);
-
-  // Filter tasks
+  // Filtered Tasks
   const filteredTasks = useMemo(() => {
-    const now = new Date();
-    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const tomorrowMidnight = todayMidnight + 24 * 60 * 60 * 1000;
-
     return tasks.filter((t) => {
-      // Employee filter
+      // Status Tab filter
+      if (statusTab === 'TODO' && t.status !== 'TODO') return false;
+      if (statusTab === 'IN_PROGRESS' && t.status !== 'IN_PROGRESS' && t.status !== 'IN_REVIEW') return false;
+      if (statusTab === 'DONE' && t.status !== 'DONE') return false;
+      if (statusTab === 'OVERDUE') {
+        if (t.status === 'DONE' || !t.dueDate) return false;
+        if (new Date(t.dueDate).getTime() >= Date.now()) return false;
+      }
+
+      // Employee Filter
       if (selectedEmployeeId !== 'ALL' && t.employeeId !== selectedEmployeeId) {
         return false;
       }
 
-      // Priority filter
+      // Priority Filter
       if (priorityFilter !== 'ALL' && t.priority !== priorityFilter) {
         return false;
-      }
-
-      // Today Focus filter
-      if (todayFocus) {
-        if (t.status === 'DONE') return false;
-        const isUrgent = t.priority === 'URGENT';
-        const isDueTodayOrPast = t.dueDate
-          ? new Date(t.dueDate).getTime() < tomorrowMidnight
-          : false;
-        const isInProgress = t.status === 'IN_PROGRESS';
-        if (!isUrgent && !isDueTodayOrPast && !isInProgress) return false;
       }
 
       // Search keyword filter
       if (search.trim()) {
         const q = search.toLowerCase();
-        const matchesTitle = t.title.toLowerCase().includes(q);
-        const matchesDesc = t.description?.toLowerCase().includes(q);
-        const matchesCat = t.category?.toLowerCase().includes(q);
-        const matchesAssignee = `${t.assignedTo.firstName} ${t.assignedTo.lastName}`
-          .toLowerCase()
-          .includes(q);
-        const matchesCode = t.assignedTo.employeeCode.toLowerCase().includes(q);
-
-        if (!matchesTitle && !matchesDesc && !matchesCat && !matchesAssignee && !matchesCode) {
-          return false;
-        }
+        const matchTitle = t.title.toLowerCase().includes(q);
+        const matchDesc = t.description?.toLowerCase().includes(q);
+        const matchCat = t.category?.toLowerCase().includes(q);
+        const matchEmp = `${t.assignedTo.firstName} ${t.assignedTo.lastName}`.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchCat && !matchEmp) return false;
       }
 
       return true;
     });
-  }, [tasks, selectedEmployeeId, priorityFilter, todayFocus, search]);
+  }, [tasks, statusTab, selectedEmployeeId, priorityFilter, search]);
 
-  // Optimistic status update handler
-  const handleUpdateStatus = async (taskId: string, newStatus: string) => {
-    const target = tasks.find((t) => t.id === taskId);
-    if (!target) return;
+  // Quick Status Updater
+  const handleUpdateStatus = async (taskId: string, newStatusValue: string) => {
+    const original = tasks.find((t) => t.id === taskId);
+    if (!original) return;
 
-    // Optimistic state
+    // Optimistic UI
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatusValue } : t))
     );
 
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatusValue }),
       });
       const data = await res.json();
       if (!data.success) {
-        // Rollback
         setTasks((prev) =>
-          prev.map((t) => (t.id === taskId ? { ...t, status: target.status } : t))
+          prev.map((t) => (t.id === taskId ? { ...t, status: original.status } : t))
         );
         toast.error(data.error || 'Failed to update task status');
       } else {
         toast.success(
-          newStatus === 'DONE'
-            ? `Completed "${target.title}"!`
-            : `Moved to ${newStatus.replace('_', ' ')}`
+          newStatusValue === 'DONE'
+            ? `Task marked as completed!`
+            : `Status updated to ${STATUS_CONFIG[newStatusValue]?.label || newStatusValue}`
         );
       }
     } catch {
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: target.status } : t))
+        prev.map((t) => (t.id === taskId ? { ...t, status: original.status } : t))
       );
       toast.error('Network error updating task status');
     }
   };
 
-  // Delete task handler
+  // Delete Task
   const handleDeleteTask = async (taskId: string, taskTitle: string) => {
     const original = tasks.find((t) => t.id === taskId);
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -301,7 +258,7 @@ export function TasksKanbanClient({
     }
   };
 
-  // Create Task handler
+  // Create Task
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmployeeId) {
@@ -323,7 +280,7 @@ export function TasksKanbanClient({
           title: newTitle.trim(),
           description: newDescription.trim() || null,
           priority: newPriority,
-          status: targetColumnForCreate,
+          status: newStatus,
           category: newCategory.trim() || 'General',
           dueDate: newDueDate || null,
         }),
@@ -332,7 +289,7 @@ export function TasksKanbanClient({
       const data = await res.json();
       if (data.success && data.data) {
         setTasks((prev) => [data.data, ...prev]);
-        toast.success('New task created and assigned!');
+        toast.success('Task successfully created and assigned!');
         setNewTitle('');
         setNewDescription('');
         setNewCategory('General');
@@ -352,18 +309,17 @@ export function TasksKanbanClient({
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
-  const formatDueDateLabel = (dueDateStr?: string | null, isDone?: boolean) => {
-    if (!dueDateStr) return null;
+  const renderDueDate = (dueDateStr?: string | null, isDone?: boolean) => {
+    if (!dueDateStr) return <span className="text-muted-foreground/60 text-xs">—</span>;
     const due = new Date(dueDateStr);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-
     const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (isDone) {
       return (
-        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Calendar className="size-3" />
           {due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
@@ -372,7 +328,7 @@ export function TasksKanbanClient({
 
     if (diffDays < 0) {
       return (
-        <span className="flex items-center gap-1 text-[11px] font-bold text-rose-500 dark:text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
           <AlertTriangle className="size-3" />
           Overdue ({Math.abs(diffDays)}d)
         </span>
@@ -380,14 +336,14 @@ export function TasksKanbanClient({
     }
     if (diffDays === 0) {
       return (
-        <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
           <Clock className="size-3" />
-          Due Today
+          Today
         </span>
       );
     }
     return (
-      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+      <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
         <Calendar className="size-3" />
         {due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
       </span>
@@ -395,239 +351,142 @@ export function TasksKanbanClient({
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* ─── Top Header & Controls ────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-5 pb-12">
+      {/* ─── Page Title Header ────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-[#252175] text-[#f37021] shadow-lg shadow-[#252175]/25 ring-1 ring-white/15">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-[#252175] text-[#f37021] shadow-md shadow-[#252175]/20 ring-1 ring-white/10">
               <CheckSquare className="size-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
-                  Workload & Tasks
-                </h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#f37021]/15 px-2.5 py-0.5 text-xs font-bold text-[#f37021] border border-[#f37021]/30">
-                  <Sparkles className="size-3" />
-                  Linear Kanban
-                </span>
-              </div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+                Tasks & Workload
+              </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Centralized task tracking, daily team deliverables, and workload management.
+                Manage team assignments, deliverables, and track completion progress.
               </p>
             </div>
           </div>
         </div>
 
+        {/* Action Header: View Toggle + Create Task */}
         <div className="flex items-center gap-2.5">
+          {/* List vs Board Toggle */}
+          <div className="flex items-center rounded-xl border border-border/70 bg-card/60 p-1 backdrop-blur-md">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === 'list'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <LayoutList className="size-3.5" />
+              <span>List View</span>
+            </button>
+            <button
+              onClick={() => setViewMode('board')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === 'board'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Kanban className="size-3.5" />
+              <span>Board View</span>
+            </button>
+          </div>
+
           <Button
-            onClick={() => {
-              setTargetColumnForCreate('TODO');
-              setCreateModalOpen(true);
-            }}
-            className="bg-gradient-to-r from-[#252175] to-[#3a34a8] hover:from-[#1e1a5f] hover:to-[#2e2985] text-white shadow-lg shadow-[#252175]/30 font-semibold text-xs h-9 px-4 rounded-xl gap-1.5"
+            onClick={() => setCreateModalOpen(true)}
+            className="bg-[#252175] hover:bg-[#1e1a5f] text-white shadow-md shadow-[#252175]/25 font-semibold text-xs h-9 px-3.5 rounded-xl gap-1.5"
           >
             <Plus className="size-4 text-[#f37021]" />
-            Assign New Task
+            <span>New Task</span>
           </Button>
         </div>
       </div>
 
-      {/* ─── Metrics KPI Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
-        {/* Total Tasks */}
-        <div className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur-xl shadow-xs transition-all hover:border-[#252175]/40">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Active Tasks</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-              <ListTodo className="size-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-foreground">
-            {metrics.total - metrics.completed}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {metrics.total} total recorded tasks
-          </p>
-        </div>
-
-        {/* In Progress */}
-        <div className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur-xl shadow-xs transition-all hover:border-[#f37021]/40">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">In Progress</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-[#f37021]/15 text-[#f37021]">
-              <Clock className="size-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-[#f37021]">
-            {metrics.inProgress}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Actively being worked on
-          </p>
-        </div>
-
-        {/* Completed */}
-        <div className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur-xl shadow-xs transition-all hover:border-emerald-500/40">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Completed</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-              <CheckCircle2 className="size-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
-            {metrics.completed}
-          </p>
-          <div className="mt-1 flex items-center gap-1.5">
-            <div className="h-1.5 flex-1 rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                style={{ width: `${metrics.completionRate}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-bold text-muted-foreground">
-              {metrics.completionRate}%
+      {/* ─── Simple Status Pill Tabs ──────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-3">
+        {[
+          { key: 'ALL', label: 'All Tasks', count: counts.total },
+          { key: 'TODO', label: 'To Do', count: counts.todo },
+          { key: 'IN_PROGRESS', label: 'In Progress', count: counts.inProgress },
+          { key: 'DONE', label: 'Completed', count: counts.done },
+          ...(counts.overdue > 0
+            ? [{ key: 'OVERDUE', label: 'Overdue', count: counts.overdue, isAlert: true }]
+            : []),
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setStatusTab(tab.key)}
+            className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+              statusTab === tab.key
+                ? tab.isAlert
+                  ? 'bg-rose-500 text-white shadow-xs'
+                  : 'bg-primary text-primary-foreground shadow-xs'
+                : 'bg-card/70 border border-border/70 text-muted-foreground hover:text-foreground hover:bg-card'
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span
+              className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                statusTab === tab.key
+                  ? 'bg-white/20 text-white'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {tab.count}
             </span>
-          </div>
-        </div>
-
-        {/* Urgent / Overdue Alert */}
-        <div className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur-xl shadow-xs transition-all hover:border-rose-500/40">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Urgent / Overdue</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
-              <Flame className="size-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-rose-600 dark:text-rose-400">
-            {metrics.urgentOrOverdue}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Require immediate attention
-          </p>
-        </div>
+          </button>
+        ))}
       </div>
 
-      {/* ─── Employee Avatar Filter Bar (People Strip) ───────────────────── */}
-      <div className="rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-xl shadow-xs">
-        <div className="flex items-center justify-between gap-2 mb-2 px-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <User className="size-3.5 text-[#f37021]" />
-            Filter by Team Member
-          </span>
-          {selectedEmployeeId !== 'ALL' && (
+      {/* ─── Search & Filters Bar ─────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search by task title, category, or employee..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 text-xs rounded-xl bg-card/60 border-border/70"
+          />
+          {search && (
             <button
-              onClick={() => setSelectedEmployeeId('ALL')}
-              className="text-[11px] font-semibold text-primary hover:underline"
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              Reset to All
+              <X className="size-3.5" />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {/* All Team Pill */}
-          <button
-            onClick={() => setSelectedEmployeeId('ALL')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all border ${
-              selectedEmployeeId === 'ALL'
-                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
-                : 'bg-background/80 hover:bg-secondary border-border text-foreground'
-            }`}
-          >
-            <span>All Members</span>
-            <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">
-              {tasks.length}
-            </span>
-          </button>
-
-          {/* Individual Employee Pills */}
-          {employees.map((emp) => {
-            const isSelected = selectedEmployeeId === emp.id;
-            const activeCount = employeeTaskCounts[emp.id] || 0;
-            return (
-              <button
-                key={emp.id}
-                onClick={() => setSelectedEmployeeId(isSelected ? 'ALL' : emp.id)}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all border ${
-                  isSelected
-                    ? 'bg-[#f37021]/15 text-[#ea580c] dark:text-[#fb923c] border-[#f37021]/50 ring-2 ring-[#f37021]/20 shadow-sm'
-                    : 'bg-background/80 hover:bg-secondary/70 border-border text-foreground'
-                }`}
-              >
-                <Avatar className="size-6 ring-1 ring-border">
-                  {emp.photoUrl && <AvatarImage src={emp.photoUrl} alt={emp.firstName} />}
-                  <AvatarFallback className="bg-[#252175] text-[#f37021] text-[10px] font-bold">
-                    {getInitials(emp.firstName, emp.lastName)}
-                  </AvatarFallback>
-                </Avatar>
-                <span>{emp.firstName}</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
-                    activeCount > 0
-                      ? 'bg-[#f37021]/20 text-[#f37021] font-bold'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {activeCount}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ─── Search & Focus Filters ───────────────────────────────────────── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          {/* Search bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search tasks, categories (#Design, #Finance), or assignees..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-10 rounded-xl bg-card/60 border-border/80 text-xs focus:ring-[#f37021]/30"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Today's Focus Button */}
-          <Button
-            variant={todayFocus ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setTodayFocus(!todayFocus)}
-            className={`h-10 rounded-xl text-xs gap-1.5 font-semibold transition-all ${
-              todayFocus
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/25 border-orange-500'
-                : 'border-border/80 hover:bg-secondary/60'
-            }`}
-          >
-            <Flame className={`size-3.5 ${todayFocus ? 'text-white' : 'text-amber-500'}`} />
-            <span>Today&apos;s Focus</span>
-            {todayFocus && <span className="text-[10px] bg-white/20 rounded px-1">ON</span>}
-          </Button>
-        </div>
-
-        {/* Priority Filter Dropdown */}
+        {/* Filter Dropdowns: Employee & Priority */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Filter className="size-3.5" />
-            <span>Priority:</span>
-          </div>
+          {/* Employee filter */}
+          <select
+            value={selectedEmployeeId}
+            onChange={(e) => setSelectedEmployeeId(e.target.value)}
+            className="h-9 rounded-xl border border-border/70 bg-card/80 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="ALL">All Team Members</option>
+            {employees.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.firstName} {emp.lastName} ({emp.employeeCode})
+              </option>
+            ))}
+          </select>
+
+          {/* Priority filter */}
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="h-10 rounded-xl border border-border/80 bg-card/60 px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#f37021]/30"
+            className="h-9 rounded-xl border border-border/70 bg-card/80 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="ALL">All Priorities</option>
             <option value="URGENT">🔴 Urgent</option>
@@ -638,199 +497,271 @@ export function TasksKanbanClient({
         </div>
       </div>
 
-      {/* ─── Kanban Board 4 Columns ───────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 items-start">
-        {COLUMNS.map((col) => {
-          const colTasks = filteredTasks.filter((t) => t.status === col.id);
-          const ColIcon = col.icon;
+      {/* ─── View 1: Spacious, User-Friendly LIST VIEW ───────────────────── */}
+      {viewMode === 'list' && (
+        <div className="rounded-2xl border border-border/70 bg-card/40 backdrop-blur-md shadow-xs overflow-hidden">
+          {filteredTasks.length === 0 ? (
+            <div className="py-16 text-center text-muted-foreground">
+              <CheckSquare className="size-10 mx-auto opacity-30 mb-2" />
+              <p className="font-semibold text-sm">No tasks found matching your filters</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Try selecting a different status tab or employee filter.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {filteredTasks.map((task) => {
+                const isDone = task.status === 'DONE';
+                const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
+                const status = STATUS_CONFIG[task.status] || STATUS_CONFIG.TODO;
 
-          return (
-            <div
-              key={col.id}
-              className="flex flex-col rounded-2xl border border-border/60 bg-card/30 backdrop-blur-md p-3.5 shadow-sm min-h-[480px]"
-            >
-              {/* Column Header */}
-              <div
-                className={`flex items-center justify-between pb-3 border-b ${col.headerBorder}`}
-              >
-                <div className="flex items-center gap-2">
+                return (
                   <div
-                    className={`flex size-6 items-center justify-center rounded-lg border ${col.badgeClass}`}
+                    key={task.id}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 transition-colors hover:bg-card/70 ${
+                      isDone ? 'opacity-70 bg-secondary/15' : ''
+                    }`}
                   >
-                    <ColIcon className="size-3.5" />
+                    {/* Left: Complete toggle + Title + Category */}
+                    <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(task.id, isDone ? 'IN_PROGRESS' : 'DONE')
+                        }
+                        className="mt-0.5 sm:mt-0 text-muted-foreground hover:text-emerald-500 transition-colors shrink-0"
+                        title={isDone ? 'Reopen task' : 'Mark as Completed'}
+                      >
+                        {isDone ? (
+                          <CheckCircle2 className="size-5 text-emerald-500" />
+                        ) : (
+                          <Circle className="size-5 hover:text-primary" />
+                        )}
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3
+                            onClick={() => setSelectedTask(task)}
+                            className={`text-sm font-bold cursor-pointer transition-colors hover:text-primary ${
+                              isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                            }`}
+                          >
+                            {task.title}
+                          </h3>
+                          {task.category && (
+                            <span className="rounded-md bg-secondary/80 px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                              #{task.category}
+                            </span>
+                          )}
+                        </div>
+
+                        {task.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Meta: Assignee + Priority + Due Date + Status Dropdown */}
+                    <div className="flex items-center gap-3 sm:gap-4 pl-8 sm:pl-0 flex-wrap shrink-0">
+                      {/* Assignee */}
+                      <div className="flex items-center gap-2 min-w-[130px]">
+                        <Avatar className="size-6 ring-1 ring-border">
+                          {task.assignedTo.photoUrl && (
+                            <AvatarImage
+                              src={task.assignedTo.photoUrl}
+                              alt={task.assignedTo.firstName}
+                            />
+                          )}
+                          <AvatarFallback className="bg-[#252175] text-[#f37021] text-[10px] font-bold">
+                            {getInitials(task.assignedTo.firstName, task.assignedTo.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {task.assignedTo.firstName} {task.assignedTo.lastName}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Priority Badge */}
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] border shrink-0 ${priority.badge}`}
+                      >
+                        {priority.label}
+                      </span>
+
+                      {/* Due Date */}
+                      <div className="min-w-[90px]">{renderDueDate(task.dueDate, isDone)}</div>
+
+                      {/* Interactive Status Changer */}
+                      <select
+                        value={task.status}
+                        onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
+                        className={`h-8 rounded-lg px-2.5 text-xs font-semibold border cursor-pointer focus:outline-none ${status.badge}`}
+                      >
+                        <option value="TODO">To Do</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="IN_REVIEW">In Review</option>
+                        <option value="DONE">Completed</option>
+                      </select>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteTask(task.id, task.title)}
+                        className="text-muted-foreground/50 hover:text-rose-500 p-1 rounded-md transition-colors"
+                        title="Delete task"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-foreground">
-                    {col.label}
-                  </h3>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${col.badgeClass}`}
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── View 2: Clean, Spacious BOARD VIEW ───────────────────────────── */}
+      {viewMode === 'board' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          {[
+            { id: 'TODO', label: 'To Do', color: 'border-slate-500/30' },
+            { id: 'IN_PROGRESS', label: 'In Progress', color: 'border-[#f37021]/40' },
+            { id: 'DONE', label: 'Completed', color: 'border-emerald-500/40' },
+          ].map((col) => {
+            const colTasks = filteredTasks.filter((t) => {
+              if (col.id === 'IN_PROGRESS') {
+                return t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW';
+              }
+              return t.status === col.id;
+            });
+
+            return (
+              <div
+                key={col.id}
+                className="flex flex-col rounded-2xl border border-border/70 bg-card/40 backdrop-blur-md p-4 min-h-[420px]"
+              >
+                {/* Column Header */}
+                <div
+                  className={`flex items-center justify-between pb-3 border-b ${col.color}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-foreground">
+                      {col.label}
+                    </h3>
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                      {colTasks.length}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setNewStatus(col.id as any);
+                      setCreateModalOpen(true);
+                    }}
+                    className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    title={`Add task to ${col.label}`}
                   >
-                    {colTasks.length}
-                  </span>
+                    <Plus className="size-4" />
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setTargetColumnForCreate(col.id);
-                    setCreateModalOpen(true);
-                  }}
-                  className="flex size-6 items-center justify-center rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                  title={`Add Task to ${col.label}`}
-                >
-                  <Plus className="size-3.5" />
-                </button>
-              </div>
+                {/* Cards Container without ugly thick scrollbars */}
+                <div className="mt-3.5 space-y-3 flex-1">
+                  {colTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground/60 border border-dashed border-border/50 rounded-xl">
+                      <p className="text-xs font-medium">No tasks in {col.label}</p>
+                    </div>
+                  ) : (
+                    colTasks.map((task) => {
+                      const isDone = task.status === 'DONE';
+                      const priority =
+                        PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
 
-              {/* Column Cards Container */}
-              <div className="mt-3 space-y-3 flex-1 overflow-y-auto max-h-[700px] pr-0.5 scrollbar-thin">
-                {colTasks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/60 border border-dashed border-border/50 rounded-xl my-2">
-                    <ColIcon className="size-7 opacity-30 mb-2" />
-                    <p className="text-xs font-semibold">No tasks in {col.label}</p>
-                    <button
-                      onClick={() => {
-                        setTargetColumnForCreate(col.id);
-                        setCreateModalOpen(true);
-                      }}
-                      className="mt-2 text-[11px] font-semibold text-primary hover:underline"
-                    >
-                      + Create task
-                    </button>
-                  </div>
-                ) : (
-                  colTasks.map((task) => {
-                    const priorityInfo =
-                      PRIORITY_THEME[task.priority] || PRIORITY_THEME.MEDIUM;
-                    const isDone = task.status === 'DONE';
-
-                    return (
-                      <div
-                        key={task.id}
-                        className={`group relative rounded-xl border border-border/70 bg-card/90 p-3.5 shadow-2xs backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${priorityInfo.border} ${
-                          isDone ? 'opacity-70 bg-card/40' : ''
-                        }`}
-                      >
-                        {/* Priority & Category Header */}
-                        <div className="flex items-center justify-between gap-1.5 mb-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                      return (
+                        <div
+                          key={task.id}
+                          className={`rounded-xl border border-border/80 bg-card p-3.5 shadow-2xs transition-all hover:border-primary/40 ${
+                            isDone ? 'opacity-70 bg-card/50' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-2">
                             <span
-                              className={`rounded px-1.5 py-0.5 text-[10px] uppercase border ${priorityInfo.badge}`}
+                              className={`rounded-full px-2 py-0.5 text-[10px] border ${priority.badge}`}
                             >
-                              {priorityInfo.label}
+                              {priority.label}
                             </span>
                             {task.category && (
-                              <span className="rounded bg-secondary/80 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                              <span className="text-[10px] font-mono text-muted-foreground">
                                 #{task.category}
                               </span>
                             )}
                           </div>
 
-                          {/* Quick Done Checkbox Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUpdateStatus(
-                                task.id,
-                                isDone ? 'IN_PROGRESS' : 'DONE'
-                              );
-                            }}
-                            className="text-muted-foreground hover:text-emerald-500 transition-colors"
-                            title={isDone ? 'Reopen task' : 'Mark as Done'}
+                          <h4
+                            onClick={() => setSelectedTask(task)}
+                            className={`text-xs font-bold cursor-pointer hover:text-primary transition-colors leading-snug ${
+                              isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                            }`}
                           >
-                            {isDone ? (
-                              <CheckCircle2 className="size-4 text-emerald-500" />
-                            ) : (
-                              <Circle className="size-4 hover:text-primary" />
-                            )}
-                          </button>
-                        </div>
+                            {task.title}
+                          </h4>
 
-                        {/* Task Title */}
-                        <h4
-                          onClick={() => setSelectedTask(task)}
-                          className={`text-xs font-bold leading-snug cursor-pointer transition-colors hover:text-primary ${
-                            isDone ? 'line-through text-muted-foreground' : 'text-foreground'
-                          }`}
-                        >
-                          {task.title}
-                        </h4>
+                          {task.description && (
+                            <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                              {task.description}
+                            </p>
+                          )}
 
-                        {/* Task Description snippet */}
-                        {task.description && (
-                          <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground leading-relaxed">
-                            {task.description}
-                          </p>
-                        )}
+                          <div className="mt-2.5">{renderDueDate(task.dueDate, isDone)}</div>
 
-                        {/* Due Date Indicator */}
-                        {task.dueDate && (
-                          <div className="mt-2.5">
-                            {formatDueDateLabel(task.dueDate, isDone)}
-                          </div>
-                        )}
-
-                        {/* Card Footer: Assignee & Move Action */}
-                        <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between gap-2">
-                          {/* Assignee info */}
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Avatar className="size-5 shrink-0 ring-1 ring-border">
-                              {task.assignedTo.photoUrl && (
-                                <AvatarImage
-                                  src={task.assignedTo.photoUrl}
-                                  alt={task.assignedTo.firstName}
-                                />
-                              )}
-                              <AvatarFallback className="bg-[#252175] text-[#f37021] text-[9px] font-bold">
-                                {getInitials(
-                                  task.assignedTo.firstName,
-                                  task.assignedTo.lastName
+                          {/* Footer */}
+                          <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Avatar className="size-5 shrink-0 ring-1 ring-border">
+                                {task.assignedTo.photoUrl && (
+                                  <AvatarImage
+                                    src={task.assignedTo.photoUrl}
+                                    alt={task.assignedTo.firstName}
+                                  />
                                 )}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-[11px] font-medium text-foreground truncate">
-                              {task.assignedTo.firstName} {task.assignedTo.lastName}
-                            </span>
-                          </div>
+                                <AvatarFallback className="bg-[#252175] text-[#f37021] text-[9px] font-bold">
+                                  {getInitials(
+                                    task.assignedTo.firstName,
+                                    task.assignedTo.lastName
+                                  )}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-[11px] font-medium text-foreground truncate">
+                                {task.assignedTo.firstName} {task.assignedTo.lastName}
+                              </span>
+                            </div>
 
-                          {/* Quick Column Transition Dropdown */}
-                          <div className="flex items-center gap-1 shrink-0">
                             <select
                               value={task.status}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                handleUpdateStatus(task.id, e.target.value)
-                              }
-                              className="text-[10px] font-semibold bg-secondary/80 hover:bg-secondary border border-border/80 rounded-md px-1.5 py-0.5 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
+                              onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
+                              className="text-[10px] font-semibold bg-secondary rounded px-1.5 py-0.5 border border-border text-foreground cursor-pointer focus:outline-none"
                             >
                               <option value="TODO">To Do</option>
                               <option value="IN_PROGRESS">In Progress</option>
-                              <option value="IN_REVIEW">In Review</option>
                               <option value="DONE">Completed</option>
                             </select>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTask(task.id, task.title);
-                              }}
-                              className="text-muted-foreground/60 hover:text-rose-500 p-0.5 rounded transition-colors"
-                              title="Delete Task"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* ─── Task Details & Edit Modal ────────────────────────────────────── */}
+      {/* ─── Task Details Modal ───────────────────────────────────────────── */}
       {selectedTask && (
         <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
           <DialogContent className="sm:max-w-lg bg-card border-border shadow-2xl">
@@ -850,7 +781,7 @@ export function TasksKanbanClient({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 pt-2 text-xs">
+            <div className="space-y-3.5 pt-2 text-xs">
               {/* Assignee Card */}
               <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-secondary/30">
                 <Avatar className="size-10 ring-2 ring-primary/20">
@@ -881,7 +812,7 @@ export function TasksKanbanClient({
                 </span>
               </div>
 
-              {/* Status and Priority Selectors */}
+              {/* Status and Priority */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300">
@@ -894,7 +825,7 @@ export function TasksKanbanClient({
                       handleUpdateStatus(selectedTask.id, next);
                       setSelectedTask({ ...selectedTask, status: next });
                     }}
-                    className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
                   >
                     <option value="TODO">To Do</option>
                     <option value="IN_PROGRESS">In Progress</option>
@@ -910,7 +841,7 @@ export function TasksKanbanClient({
                   <div className="mt-1">
                     <span
                       className={`inline-block rounded-lg px-2.5 py-1.5 text-xs font-bold border ${
-                        PRIORITY_THEME[selectedTask.priority]?.badge || ''
+                        PRIORITY_CONFIG[selectedTask.priority]?.badge || ''
                       }`}
                     >
                       {selectedTask.priority}
@@ -929,7 +860,7 @@ export function TasksKanbanClient({
                 </div>
               </div>
 
-              {/* Meta details */}
+              {/* Meta */}
               <div className="grid grid-cols-2 gap-2 text-muted-foreground pt-1">
                 <div>
                   <span className="font-semibold">Category: </span>
@@ -967,7 +898,7 @@ export function TasksKanbanClient({
         </Dialog>
       )}
 
-      {/* ─── Create / Assign Task Modal ───────────────────────────────────── */}
+      {/* ─── Create New Task Modal ────────────────────────────────────────── */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent className="sm:max-w-lg bg-card border-border shadow-2xl">
           <DialogHeader>
@@ -981,12 +912,11 @@ export function TasksKanbanClient({
               Create New Task
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Delegate responsibilities, set deadlines, and track deliverables.
+              Directly assign tasks with priorities, project tags, and deadlines.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateTask} className="space-y-3.5 pt-2">
-            {/* Assignee select */}
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Assigned Employee *
@@ -995,7 +925,7 @@ export function TasksKanbanClient({
                 value={newEmployeeId}
                 onChange={(e) => setNewEmployeeId(e.target.value)}
                 required
-                className="mt-1 w-full h-10 rounded-xl border border-border bg-background px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+                className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-3 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
@@ -1006,7 +936,6 @@ export function TasksKanbanClient({
               </select>
             </div>
 
-            {/* Task Title */}
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Task Title *
@@ -1017,11 +946,10 @@ export function TasksKanbanClient({
                 placeholder="e.g. Audit Q4 tax records, Finalize UI components..."
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="mt-1 text-xs"
+                className="mt-1 text-xs h-9"
               />
             </div>
 
-            {/* Priority & Category Grid */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
@@ -1031,7 +959,7 @@ export function TasksKanbanClient({
                 <select
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value as any)}
-                  className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="LOW">🟢 Low</option>
                   <option value="MEDIUM">🔵 Medium</option>
@@ -1055,7 +983,6 @@ export function TasksKanbanClient({
               </div>
             </div>
 
-            {/* Due Date & Initial Column */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
@@ -1072,32 +999,30 @@ export function TasksKanbanClient({
 
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Initial Column
+                  Initial Status
                 </label>
                 <select
-                  value={targetColumnForCreate}
-                  onChange={(e) => setTargetColumnForCreate(e.target.value as any)}
-                  className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value as any)}
+                  className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="TODO">To Do</option>
                   <option value="IN_PROGRESS">In Progress</option>
-                  <option value="IN_REVIEW">In Review</option>
                   <option value="DONE">Completed</option>
                 </select>
               </div>
             </div>
 
-            {/* Description */}
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Detailed Instructions
               </label>
               <textarea
-                rows={3}
+                rows={2}
                 placeholder="Key deliverables, context, or acceptance criteria..."
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                className="mt-1 w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
 
