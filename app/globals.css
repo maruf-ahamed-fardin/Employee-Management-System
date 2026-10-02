@@ -39,6 +39,7 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.75rem; /* 12px controls; panels use --radius-2xl (16px) */
 
   /* SeloraX Luxury Palette: Soft Iris Indigo & Warm Luminous Sunset Coral */
@@ -83,6 +84,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --brand-blue: #818cf8;
   --brand-blue-hover: #6366f1;
   --brand-orange: #fb923c;
@@ -157,13 +159,58 @@ body {
   }
 }
 
+@keyframes linear-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
 @keyframes scan-beam {
   0% {
     transform: translateX(-100%);
   }
   100% {
-    transform: translateX(100%);
+    transform: translateX(350%);
   }
+}
+
+.linear-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.linear-shimmer::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-150%) skewX(-20deg);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 20%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.02) 80%,
+    transparent 100%
+  );
+  animation: linear-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  content: '';
+  pointer-events: none;
+}
+
+:root:not(.dark) .linear-shimmer::after {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.02) 20%,
+    rgba(0, 0, 0, 0.06) 50%,
+    rgba(0, 0, 0, 0.02) 80%,
+    transparent 100%
+  );
 }
 
 @keyframes chart-pulse {
@@ -255,5 +302,30 @@ body {
 
 .animate-scan-beam {
   animation: scan-beam 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* Hide scrollbar while preserving scroll functionality */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ensure native select dropdown options match dark theme */
+select {
+  color-scheme: light dark;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.dark select option,
+:is(.dark select) option {
+  background-color: #0d121f !important;
+  color: #f8fafc !important;
 }
 

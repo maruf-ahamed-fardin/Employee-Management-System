@@ -19,6 +19,7 @@ import {
   FileText,
   LifeBuoy,
   Network,
+  CheckSquare,
   LucideIcon,
 } from 'lucide-react';
 
@@ -45,6 +46,12 @@ export const navigationConfig: NavItem[] = [
     title: 'Employees',
     href: '/employees',
     icon: Users,
+    section: 'Workspace',
+  },
+  {
+    title: 'Workload & Tasks',
+    href: '/tasks',
+    icon: CheckSquare,
     section: 'Workspace',
   },
   {
