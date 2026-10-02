@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LinearTaskModal } from './LinearTaskModal';
 import {
   Dialog,
   DialogContent,
@@ -139,16 +140,7 @@ export function TasksKanbanClient({
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
-
-  // Create Form State
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [newEmployeeId, setNewEmployeeId] = useState(employees[0]?.id || '');
-  const [newPriority, setNewPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [newStatus, setNewStatus] = useState<'TODO' | 'IN_PROGRESS' | 'DONE'>('TODO');
-  const [newCategory, setNewCategory] = useState('General');
-  const [newDueDate, setNewDueDate] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Metrics
   const counts = useMemo(() => {
@@ -255,53 +247,6 @@ export function TasksKanbanClient({
     } catch {
       if (original) setTasks((prev) => [...prev, original]);
       toast.error('Network error deleting task');
-    }
-  };
-
-  // Create Task
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEmployeeId) {
-      toast.error('Please select an employee');
-      return;
-    }
-    if (!newTitle.trim()) {
-      toast.error('Task title is required');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId: newEmployeeId,
-          title: newTitle.trim(),
-          description: newDescription.trim() || null,
-          priority: newPriority,
-          status: newStatus,
-          category: newCategory.trim() || 'General',
-          dueDate: newDueDate || null,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.data) {
-        setTasks((prev) => [data.data, ...prev]);
-        toast.success('Task successfully created and assigned!');
-        setNewTitle('');
-        setNewDescription('');
-        setNewCategory('General');
-        setNewDueDate('');
-        setCreateModalOpen(false);
-      } else {
-        toast.error(data.error || 'Failed to create task');
-      }
-    } catch {
-      toast.error('Network error creating task');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -898,158 +843,17 @@ export function TasksKanbanClient({
         </Dialog>
       )}
 
-      {/* ─── Create New Task Modal ────────────────────────────────────────── */}
-      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-        <DialogContent className="sm:max-w-lg bg-card border-border shadow-2xl">
-          <DialogHeader>
-            <div className="flex items-center gap-2 text-[#f37021] mb-1">
-              <Plus className="size-4" />
-              <span className="text-xs font-bold tracking-wider uppercase">
-                Assign Work
-              </span>
-            </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-              Create New Task
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Directly assign tasks with priorities, project tags, and deadlines.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCreateTask} className="space-y-3.5 pt-2">
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Assigned Employee *
-              </label>
-              <select
-                value={newEmployeeId}
-                onChange={(e) => setNewEmployeeId(e.target.value)}
-                required
-                className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-3 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.firstName} {emp.lastName} ({emp.employeeCode}) —{' '}
-                    {emp.departmentName || 'Staff'}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Task Title *
-              </label>
-              <Input
-                type="text"
-                required
-                placeholder="e.g. Audit Q4 tax records, Finalize UI components..."
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="mt-1 text-xs h-9"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <Flag className="size-3.5 text-muted-foreground" />
-                  Priority
-                </label>
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as any)}
-                  className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="LOW">🟢 Low</option>
-                  <option value="MEDIUM">🔵 Medium</option>
-                  <option value="HIGH">🟡 High</option>
-                  <option value="URGENT">🔴 Urgent</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <Tag className="size-3.5 text-muted-foreground" />
-                  Category / Tag
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Engineering, Design, HR..."
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="mt-1 text-xs h-9"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <Calendar className="size-3.5 text-muted-foreground" />
-                  Due Date
-                </label>
-                <Input
-                  type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
-                  className="mt-1 text-xs h-9"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Initial Status
-                </label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as any)}
-                  className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Completed</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Detailed Instructions
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Key deliverables, context, or acceptance criteria..."
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-
-            <DialogFooter className="pt-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setCreateModalOpen(false)}
-                disabled={isSubmitting}
-                className="text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isSubmitting}
-                className="bg-[#252175] hover:bg-[#1e1a5f] text-white font-semibold text-xs gap-1.5"
-              >
-                <CheckSquare className="size-3.5 text-[#f37021]" />
-                {isSubmitting ? 'Assigning...' : 'Assign Task'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* ─── Linear Task Modal ────────────────────────────────────────── */}
+      <LinearTaskModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        employees={employees}
+        defaultEmployeeId={selectedEmployeeId !== 'ALL' ? selectedEmployeeId : undefined}
+        defaultStatus={newStatus}
+        onTaskCreated={(createdTask) => {
+          setTasks((prev) => [createdTask, ...prev]);
+        }}
+      />
     </div>
   );
 }
