@@ -417,11 +417,11 @@ export function TasksKanbanClient({
           <select
             value={selectedEmployeeId}
             onChange={(e) => setSelectedEmployeeId(e.target.value)}
-            className="h-9 rounded-xl border border-border/70 bg-card/80 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
           >
-            <option value="ALL">All Team Members</option>
+            <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Team Members</option>
             {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
+              <option key={emp.id} value={emp.id} className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">
                 {emp.firstName} {emp.lastName} ({emp.employeeCode})
               </option>
             ))}
@@ -431,13 +431,13 @@ export function TasksKanbanClient({
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="h-9 rounded-xl border border-border/70 bg-card/80 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
           >
-            <option value="ALL">All Priorities</option>
-            <option value="URGENT">🔴 Urgent</option>
-            <option value="HIGH">🟡 High</option>
-            <option value="MEDIUM">🔵 Medium</option>
-            <option value="LOW">🟢 Low</option>
+            <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Priorities</option>
+            <option value="URGENT" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔴 Urgent</option>
+            <option value="HIGH" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🟡 High</option>
+            <option value="MEDIUM" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔵 Medium</option>
+            <option value="LOW" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🟢 Low</option>
           </select>
         </div>
       </div>
@@ -544,12 +544,12 @@ export function TasksKanbanClient({
                       <select
                         value={task.status}
                         onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
-                        className={`h-8 rounded-lg px-2.5 text-xs font-semibold border cursor-pointer focus:outline-none ${status.badge}`}
+                        className="h-8 rounded-lg px-2.5 text-xs font-semibold border border-border/80 bg-card dark:bg-[#131b2e] text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none shadow-xs"
                       >
-                        <option value="TODO">To Do</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="IN_REVIEW">In Review</option>
-                        <option value="DONE">Completed</option>
+                        <option value="TODO" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100 font-medium">To Do</option>
+                        <option value="IN_PROGRESS" className="bg-white dark:bg-[#0d121f] text-[#f37021] dark:text-[#fb923c] font-medium">In Progress</option>
+                        <option value="IN_REVIEW" className="bg-white dark:bg-[#0d121f] text-purple-600 dark:text-purple-300 font-medium">In Review</option>
+                        <option value="DONE" className="bg-white dark:bg-[#0d121f] text-emerald-600 dark:text-emerald-400 font-medium">Completed</option>
                       </select>
 
                       {/* Delete */}
@@ -688,11 +688,11 @@ export function TasksKanbanClient({
                             <select
                               value={task.status}
                               onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
-                              className="text-[10px] font-semibold bg-secondary rounded px-1.5 py-0.5 border border-border text-foreground cursor-pointer focus:outline-none"
+                              className="text-[10px] font-semibold bg-secondary dark:bg-[#131b2e] rounded px-2 py-0.5 border border-border text-foreground dark:text-slate-100 cursor-pointer focus:outline-none"
                             >
-                              <option value="TODO">To Do</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="DONE">Completed</option>
+                              <option value="TODO" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100 font-medium">To Do</option>
+                              <option value="IN_PROGRESS" className="bg-white dark:bg-[#0d121f] text-[#f37021] dark:text-[#fb923c] font-medium">In Progress</option>
+                              <option value="DONE" className="bg-white dark:bg-[#0d121f] text-emerald-600 dark:text-emerald-400 font-medium">Completed</option>
                             </select>
                           </div>
                         </div>
@@ -770,12 +770,12 @@ export function TasksKanbanClient({
                       handleUpdateStatus(selectedTask.id, next);
                       setSelectedTask({ ...selectedTask, status: next });
                     }}
-                    className="mt-1 w-full h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="mt-1 w-full h-9 rounded-xl border border-border bg-card dark:bg-[#131b2e] px-3 text-xs font-semibold text-foreground dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
                   >
-                    <option value="TODO">To Do</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="IN_REVIEW">In Review</option>
-                    <option value="DONE">Completed</option>
+                    <option value="TODO" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">To Do</option>
+                    <option value="IN_PROGRESS" className="bg-white dark:bg-[#0d121f] text-[#f37021] dark:text-[#fb923c]">In Progress</option>
+                    <option value="IN_REVIEW" className="bg-white dark:bg-[#0d121f] text-purple-600 dark:text-purple-300">In Review</option>
+                    <option value="DONE" className="bg-white dark:bg-[#0d121f] text-emerald-600 dark:text-emerald-400">Completed</option>
                   </select>
                 </div>
 

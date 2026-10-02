@@ -39,6 +39,7 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.75rem; /* 12px controls; panels use --radius-2xl (16px) */
 
   /* SeloraX Luxury Palette: Soft Iris Indigo & Warm Luminous Sunset Coral */
@@ -83,6 +84,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --brand-blue: #818cf8;
   --brand-blue-hover: #6366f1;
   --brand-orange: #fb923c;
@@ -264,5 +266,21 @@ body {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Ensure native select dropdown options match dark theme */
+select {
+  color-scheme: light dark;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.dark select option,
+:is(.dark select) option {
+  background-color: #0d121f !important;
+  color: #f8fafc !important;
 }
 
