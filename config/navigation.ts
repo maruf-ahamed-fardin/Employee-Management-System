@@ -17,6 +17,8 @@ import {
   Laptop,
   ClipboardCheck,
   FileText,
+  LifeBuoy,
+  Network,
   LucideIcon,
 } from 'lucide-react';
 
@@ -63,6 +65,12 @@ export const navigationConfig: NavItem[] = [
     icon: ClipboardCheck,
     section: 'Workspace',
   },
+  {
+    title: 'HR Helpdesk',
+    href: '/helpdesk',
+    icon: LifeBuoy,
+    section: 'Workspace',
+  },
 
   // ─── Finance & Operations ──────────────────────────────────────────────────
   {
@@ -90,6 +98,12 @@ export const navigationConfig: NavItem[] = [
     title: 'Team Directory',
     href: '/team-profile',
     icon: Contact,
+    section: 'Organization',
+  },
+  {
+    title: 'Org Chart',
+    href: '/org-chart',
+    icon: Network,
     section: 'Organization',
   },
   {
