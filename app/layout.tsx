@@ -59,13 +59,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased selection:bg-[#f97316]/20 selection:text-[#ea580c] dark:selection:bg-[#fb923c]/30 dark:selection:text-[#fb923c]`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.className} min-h-screen bg-background text-foreground antialiased selection:bg-[#f97316]/20 selection:text-[#ea580c] dark:selection:bg-[#fb923c]/30 dark:selection:text-[#fb923c]`}
+      >
         {children}
         <Toaster position="top-right" richColors />
       </body>
