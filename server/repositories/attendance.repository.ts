@@ -118,7 +118,64 @@ export const attendanceRepository = {
       });
     }
 
-    return record;
+    const updatedAttendance = await prisma.attendance.findUnique({
+      where: { id: attendance.id },
+      include: {
+        records: {
+          orderBy: { occurredAt: 'asc' },
+        },
+      },
+    });
+
+    return {
+      ...record,
+      attendance: updatedAttendance,
+    };
+  },
+
+  async resumeShift(employeeId: string, workDate: string) {
+    const attendance = await prisma.attendance.findUnique({
+      where: {
+        employeeId_workDate: {
+          employeeId,
+          workDate,
+        },
+      },
+    });
+
+    if (!attendance) return null;
+
+    // Remove lastOutAt
+    await prisma.attendance.update({
+      where: { id: attendance.id },
+      data: {
+        lastOutAt: null,
+      },
+    });
+
+    // Delete the last CHECK_OUT record so history remains clean
+    const lastCheckOut = await prisma.attendanceRecord.findFirst({
+      where: {
+        attendanceId: attendance.id,
+        type: 'CHECK_OUT',
+      },
+      orderBy: { occurredAt: 'desc' },
+    });
+
+    if (lastCheckOut) {
+      await prisma.attendanceRecord.delete({
+        where: { id: lastCheckOut.id },
+      });
+    }
+
+    return prisma.attendance.findUnique({
+      where: { id: attendance.id },
+      include: {
+        records: {
+          orderBy: { occurredAt: 'asc' },
+        },
+      },
+    });
   },
 
   async updateCorrection(id: string, data: { firstInAt?: string; lastOutAt?: string; status: string; note: string }) {

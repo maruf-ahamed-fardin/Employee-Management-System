@@ -39,17 +39,25 @@ export async function POST(req: NextRequest) {
 
     let employeeId = validated.employeeId || session?.employeeId;
 
+    if (!employeeId && session?.id) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: { employeeId: true },
+      });
+      employeeId = dbUser?.employeeId || undefined;
+    }
+
     if (!employeeId) {
       // Find default employee or first employee
-      const firstEmp = await prisma.employee.findFirst();
+      const firstEmp = await prisma.employee.findFirst({ select: { id: true } });
       if (!firstEmp) return errorResponse('No employee found for check in', 400);
       employeeId = firstEmp.id;
     }
 
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const record = await attendanceService.punch(employeeId, validated, ip);
+    const result = await attendanceService.punch(employeeId, validated, ip);
 
-    return successResponse(record, 'Punch recorded successfully', undefined, 201);
+    return successResponse(result, 'Punch recorded successfully', undefined, 201);
   } catch (err: any) {
     return errorResponse(err?.errors?.[0]?.message || err?.message || 'Failed to punch', 400);
   }
