@@ -61,7 +61,7 @@ export default async function HelpdeskPage() {
     }),
   ]);
 
-  const formattedTickets: TicketItem[] = ticketsData.map((t) => ({
+  const formattedTickets: TicketItem[] = ticketsData.map((t: any) => ({
     id: t.id,
     ticketNumber: t.ticketNumber,
     title: t.title,
@@ -96,7 +96,7 @@ export default async function HelpdeskPage() {
       : null,
   }));
 
-  const formattedEmployees: EmployeeOption[] = employeesData.map((e) => ({
+  const formattedEmployees: EmployeeOption[] = employeesData.map((e: any) => ({
     id: e.id,
     name: `${e.firstName} ${e.lastName}`,
     code: e.employeeCode,
