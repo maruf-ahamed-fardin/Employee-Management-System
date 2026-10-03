@@ -510,36 +510,36 @@ export function AttendanceChart({
       <div className="pointer-events-none absolute -bottom-24 -right-20 size-80 rounded-full bg-emerald-500/10 dark:bg-emerald-500/10 blur-3xl" />
 
       {/* ─── 1. Header Bar: Title, Shift Info & Quick Superadmin Link ─────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 dark:border-white/10 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="size-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/25 ring-1 ring-white/20 shrink-0 flex items-center justify-center text-white">
-            <Gauge className="size-5.5 text-white" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-4 border-b border-slate-200/80 dark:border-white/10 relative z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-10 sm:size-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/25 ring-1 ring-white/20 shrink-0 flex items-center justify-center text-white">
+            <Gauge className="size-5 sm:size-5.5 text-white" />
           </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
                 Workforce Velocity & Attendance Dial
               </h3>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono whitespace-nowrap shrink-0">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
-                Live Shift Active
+                Shift 1 Active
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
-              <span>Standard Shift: 09:00 AM – 06:00 PM BST</span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <span className="text-emerald-500 font-medium">Interactive Dial Sync</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+              <span className="whitespace-nowrap font-medium">Shift: 09:00 AM – 06:00 PM BST</span>
+              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+              <span className="text-emerald-500 font-semibold whitespace-nowrap">Interactive Dial Sync</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center flex-wrap gap-2 shrink-0 self-start lg:self-auto">
           {/* Active Context Reset Pill if day or employee selected */}
           {(selectedStaff || (selectedDay && !selectedDay.isToday)) && (
             <button
               type="button"
               onClick={resetToToday}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-xs font-bold text-cyan-400 transition-all cursor-pointer animate-pulse"
+              className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-xs font-bold text-cyan-400 transition-all cursor-pointer shadow-sm"
               title="Return to today's live team overview"
             >
               <RotateCcw className="size-3" />
@@ -550,14 +550,14 @@ export function AttendanceChart({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer shadow-sm"
+            className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer shadow-sm"
           >
             <Maximize2 className="size-3.5" />
             <span>Full Roster Audit</span>
           </button>
           <Link
             href="/attendance"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+            className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
           >
             <span>Punch Terminal</span>
             <ChevronRight className="size-3.5 text-slate-400" />
@@ -1250,12 +1250,12 @@ export function AttendanceChart({
 
       {/* ─── 4. SUPERADMIN FULL AUDIT MODAL DIALOG ────────────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-4xl rounded-3xl border border-white/15 bg-[#090d16] p-6 shadow-2xl space-y-5 relative max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-5xl h-[85vh] max-h-[740px] rounded-3xl border border-white/15 bg-[#090d16] shadow-2xl flex flex-col overflow-hidden relative">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="p-5 sm:p-6 pb-4 border-b border-white/10 shrink-0 flex items-center justify-between bg-[#090d16]">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <div className="size-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
                   <ShieldCheck className="size-5" />
                 </div>
                 <div>
@@ -1270,39 +1270,37 @@ export function AttendanceChart({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="size-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="size-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            {/* Modal Quick Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="size-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, ID or department..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 w-56 sm:w-72"
-                  />
-                </div>
+            {/* Modal Quick Controls Toolbar */}
+            <div className="px-5 sm:px-6 py-3 border-b border-white/5 bg-white/[0.02] shrink-0 flex flex-wrap items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search className="size-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search by name, ID or department..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={exportRosterCSV}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-bold text-emerald-400 transition-all cursor-pointer"
+                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-bold text-emerald-400 transition-all cursor-pointer"
                 >
                   <FileSpreadsheet className="size-3.5" />
                   <span>Export CSV Log</span>
                 </button>
                 <Link
                   href="/attendance"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all cursor-pointer"
+                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all cursor-pointer"
                 >
                   <span>Attendance Terminal</span>
                   <ExternalLink className="size-3.5" />
@@ -1310,119 +1308,121 @@ export function AttendanceChart({
               </div>
             </div>
 
-            {/* Modal Table Container */}
-            <div className="flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.01]">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-white/[0.03] text-slate-400 uppercase text-[10px] font-bold border-b border-white/10 sticky top-0 backdrop-blur-md">
-                  <tr>
-                    <th className="py-3 px-4">Employee</th>
-                    <th className="py-3 px-4">Department</th>
-                    <th className="py-3 px-4">First In (BST)</th>
-                    <th className="py-3 px-4">Last Out (BST)</th>
-                    <th className="py-3 px-4">Worked</th>
-                    <th className="py-3 px-4">Compliance</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredRoster.map((person) => {
-                    const initials =
-                      `${person.firstName?.[0] || ''}${person.lastName?.[0] || ''}`.toUpperCase() || 'SX';
+            {/* Modal Table Container - Scrollable area */}
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-4 sm:p-6">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.01] overflow-hidden">
+                <table className="w-full min-w-[800px] text-left text-xs">
+                  <thead className="bg-white/[0.04] text-slate-400 uppercase text-[10px] font-bold border-b border-white/10 sticky top-0 backdrop-blur-md">
+                    <tr>
+                      <th className="py-3 px-4 min-w-[170px]">Employee</th>
+                      <th className="py-3 px-4 min-w-[130px]">Department</th>
+                      <th className="py-3 px-4 min-w-[105px]">First In (BST)</th>
+                      <th className="py-3 px-4 min-w-[105px]">Last Out (BST)</th>
+                      <th className="py-3 px-4 min-w-[80px]">Worked</th>
+                      <th className="py-3 px-4 min-w-[85px]">Compliance</th>
+                      <th className="py-3 px-4 min-w-[115px]">Status</th>
+                      <th className="py-3 px-4 text-right min-w-[80px]">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredRoster.map((person) => {
+                      const initials =
+                        `${person.firstName?.[0] || ''}${person.lastName?.[0] || ''}`.toUpperCase() || 'SX';
 
-                    return (
-                      <tr key={person.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className="size-7 rounded-lg bg-indigo-500/20 text-indigo-300 font-mono font-bold flex items-center justify-center text-xs">
-                              {initials}
+                      return (
+                        <tr key={person.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2.5">
+                              <div className="size-7 rounded-lg bg-indigo-500/20 text-indigo-300 font-mono font-bold flex items-center justify-center text-xs">
+                                {initials}
+                              </div>
+                              <div>
+                                <span className="font-bold text-white block">{person.fullName}</span>
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  {person.employeeCode}
+                                </span>
+                              </div>
                             </div>
-                            <div>
-                              <span className="font-bold text-white block">{person.fullName}</span>
-                              <span className="text-[10px] font-mono text-slate-400">
-                                {person.employeeCode}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-slate-300 font-medium block">{person.deptName}</span>
+                            <span className="text-[10px] text-slate-500">{person.position}</span>
+                          </td>
+                          <td className="py-3 px-4 font-mono font-semibold">
+                            {person.firstInAt ? (
+                              <span className="text-emerald-400 flex items-center gap-1.5">
+                                <LogIn className="size-3" />
+                                {person.firstInAt}
                               </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-slate-300 font-medium block">{person.deptName}</span>
-                          <span className="text-[10px] text-slate-500">{person.position}</span>
-                        </td>
-                        <td className="py-3 px-4 font-mono font-semibold">
-                          {person.firstInAt ? (
-                            <span className="text-emerald-400 flex items-center gap-1.5">
-                              <LogIn className="size-3" />
-                              {person.firstInAt}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">Not Punched</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 font-mono">
-                          {person.lastOutAt ? (
-                            <span className="text-slate-300 flex items-center gap-1.5">
-                              <LogOut className="size-3 text-slate-400" />
-                              {person.lastOutAt}
-                            </span>
-                          ) : person.hasPunchedIn ? (
-                            <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
-                              <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
-                              Active Shift
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">--</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-300">
-                          {person.workedFormatted || '--'}
-                        </td>
-                        <td className="py-3 px-4 font-mono font-bold text-cyan-400">
-                          {person.personalRate}%
-                        </td>
-                        <td className="py-3 px-4">
-                          {person.statusKey === 'COMPLETED' ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                              Completed ({person.workedFormatted || 'Shift'})
-                            </span>
-                          ) : person.statusKey === 'IN_OFFICE' ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                              In Office
-                            </span>
-                          ) : person.statusKey === 'LATE' ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                              Late (+{person.lateMinutes}m)
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-400">
-                              Pending Arrival
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Link
-                            href={`/attendance?employeeId=${person.id}`}
-                            className="text-indigo-400 hover:text-indigo-300 font-bold text-xs flex items-center gap-1 justify-end"
-                          >
-                            <span>Inspect</span>
-                            <ArrowRight className="size-3" />
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            ) : (
+                              <span className="text-slate-500">Not Punched</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-mono">
+                            {person.lastOutAt ? (
+                              <span className="text-slate-300 flex items-center gap-1.5">
+                                <LogOut className="size-3 text-slate-400" />
+                                {person.lastOutAt}
+                              </span>
+                            ) : person.hasPunchedIn ? (
+                              <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+                                <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                Active Shift
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">--</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-slate-300">
+                            {person.workedFormatted || '--'}
+                          </td>
+                          <td className="py-3 px-4 font-mono font-bold text-cyan-400">
+                            {person.personalRate}%
+                          </td>
+                          <td className="py-3 px-4">
+                            {person.statusKey === 'COMPLETED' ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                                Completed ({person.workedFormatted || 'Shift'})
+                              </span>
+                            ) : person.statusKey === 'IN_OFFICE' ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                In Office
+                              </span>
+                            ) : person.statusKey === 'LATE' ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                Late (+{person.lateMinutes}m)
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-400">
+                                Pending Arrival
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <Link
+                              href={`/attendance?employeeId=${person.id}`}
+                              className="text-indigo-400 hover:text-indigo-300 font-bold text-xs inline-flex items-center gap-1 justify-end hover:underline"
+                            >
+                              <span>Inspect</span>
+                              <ArrowRight className="size-3" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Modal Footer Summary */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+            {/* Modal Footer Summary - Fixed and NEVER clipped! */}
+            <div className="px-5 sm:px-6 py-3.5 border-t border-white/10 bg-[#060a12] shrink-0 flex items-center justify-between text-xs text-slate-400">
               <div className="flex items-center gap-3">
-                <span className="text-emerald-400 font-bold">● {arrivedCount} Arrived</span>
-                <span className="text-indigo-400 font-bold">● {pendingCount} Pending</span>
-                <span className="text-amber-400 font-bold">● {lateCount} Late</span>
+                <span className="text-emerald-400 font-bold whitespace-nowrap">● {arrivedCount} Arrived</span>
+                <span className="text-indigo-400 font-bold whitespace-nowrap">● {pendingCount} Pending</span>
+                <span className="text-amber-400 font-bold whitespace-nowrap">● {lateCount} Late</span>
               </div>
-              <span className="font-mono text-slate-500">
+              <span className="font-mono text-slate-400 whitespace-nowrap text-xs">
                 Shift: 09:00 AM – 06:00 PM BST
               </span>
             </div>
