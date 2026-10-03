@@ -187,7 +187,10 @@ export function DashboardClientView({
 
           {/* 12-Column Balanced Bento Grid: Trends (8 cols) + Recent Joiners (4 cols) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <AttendanceChart />
+            <AttendanceChart
+              attendanceMetrics={metrics.attendance}
+              totalEmployees={metrics.totalEmployees}
+            />
             <EmployeeOverview employees={metrics.recentEmployees as any} />
           </div>
 
