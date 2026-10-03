@@ -5,6 +5,7 @@ import {
   ListTodo,
   Clock,
   CheckCircle2,
+  CheckCircle,
   AlertTriangle,
   Plus,
   Search,
@@ -22,7 +23,15 @@ import {
   Kanban,
   X,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   MoreHorizontal,
+  Users,
+  ExternalLink,
+  BarChart3,
+  TrendingUp,
+  Layers,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,7 +140,7 @@ export function TasksKanbanClient({
   employees: EmployeeOption[];
 }) {
   const [tasks, setTasks] = useState<TaskItem[]>(initialTasks);
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'board' | 'team'>('list');
   const [statusTab, setStatusTab] = useState<string>('ALL');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
@@ -141,6 +150,133 @@ export function TasksKanbanClient({
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [newStatus, setNewStatus] = useState<'TODO' | 'IN_PROGRESS' | 'DONE'>('TODO');
+  const [assigneeForNewTask, setAssigneeForNewTask] = useState<string | undefined>(undefined);
+
+  // Team Workload View States
+  const [teamSearch, setTeamSearch] = useState<string>('');
+  const [teamDeptFilter, setTeamDeptFilter] = useState<string>('ALL');
+  const [teamWorkloadFilter, setTeamWorkloadFilter] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED' | 'AVAILABLE'>('ALL');
+  const [teamSortBy, setTeamSortBy] = useState<'assigned' | 'completion' | 'overdue' | 'name'>('assigned');
+  const [expandedEmpId, setExpandedEmpId] = useState<string | null>(null);
+
+  // Unique departments for filtering
+  const uniqueDepartments = useMemo(() => {
+    const set = new Set<string>();
+    employees.forEach((emp) => {
+      if (emp.departmentName) set.add(emp.departmentName);
+    });
+    return Array.from(set).sort();
+  }, [employees]);
+
+  // Per-Employee Workload Aggregations
+  const employeeWorkloadStats = useMemo(() => {
+    return employees.map((emp) => {
+      const empTasks = tasks.filter((t) => t.employeeId === emp.id);
+      const totalAssigned = empTasks.length;
+      const completed = empTasks.filter((t) => t.status === 'DONE').length;
+      const inProgress = empTasks.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW').length;
+      const todo = empTasks.filter((t) => t.status === 'TODO').length;
+      const overdue = empTasks.filter((t) => {
+        if (t.status === 'DONE' || !t.dueDate) return false;
+        return new Date(t.dueDate).getTime() < Date.now();
+      }).length;
+      const completionRate = totalAssigned > 0 ? Math.round((completed / totalAssigned) * 100) : 0;
+
+      let loadStatus: { label: string; badge: string; dot: string; type: string } = {
+        label: 'Optimal',
+        badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+        dot: 'bg-emerald-500',
+        type: 'OPTIMAL',
+      };
+
+      if (overdue > 0) {
+        loadStatus = {
+          label: `${overdue} Overdue`,
+          badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+          dot: 'bg-rose-500 animate-pulse',
+          type: 'OVERDUE',
+        };
+      } else if (totalAssigned >= 4) {
+        loadStatus = {
+          label: 'Heavy Load',
+          badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+          dot: 'bg-amber-500',
+          type: 'HEAVY',
+        };
+      } else if (totalAssigned === 0) {
+        loadStatus = {
+          label: 'Available',
+          badge: 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20',
+          dot: 'bg-slate-400',
+          type: 'AVAILABLE',
+        };
+      } else if (completed === totalAssigned && totalAssigned > 0) {
+        loadStatus = {
+          label: '100% Done',
+          badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+          dot: 'bg-cyan-400',
+          type: 'DONE',
+        };
+      }
+
+      return {
+        ...emp,
+        tasks: empTasks,
+        totalAssigned,
+        completed,
+        inProgress,
+        todo,
+        overdue,
+        completionRate,
+        loadStatus,
+      };
+    });
+  }, [employees, tasks]);
+
+  // Filtered & Sorted Employees for Team Workload View
+  const filteredEmployeeStats = useMemo(() => {
+    return employeeWorkloadStats
+      .filter((emp) => {
+        if (teamDeptFilter !== 'ALL' && emp.departmentName !== teamDeptFilter) return false;
+        if (teamWorkloadFilter === 'ACTIVE' && emp.totalAssigned - emp.completed === 0) return false;
+        if (teamWorkloadFilter === 'OVERDUE' && emp.overdue === 0) return false;
+        if (teamWorkloadFilter === 'COMPLETED' && (emp.totalAssigned === 0 || emp.completed !== emp.totalAssigned)) return false;
+        if (teamWorkloadFilter === 'AVAILABLE' && emp.totalAssigned > 0) return false;
+
+        if (teamSearch.trim()) {
+          const q = teamSearch.toLowerCase();
+          const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
+          const code = emp.employeeCode.toLowerCase();
+          const dept = (emp.departmentName || '').toLowerCase();
+          const title = (emp.positionTitle || '').toLowerCase();
+          if (!fullName.includes(q) && !code.includes(q) && !dept.includes(q) && !title.includes(q)) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (teamSortBy === 'assigned') return b.totalAssigned - a.totalAssigned;
+        if (teamSortBy === 'completion') return b.completionRate - a.completionRate;
+        if (teamSortBy === 'overdue') return b.overdue - a.overdue;
+        return a.firstName.localeCompare(b.firstName);
+      });
+  }, [employeeWorkloadStats, teamDeptFilter, teamWorkloadFilter, teamSearch, teamSortBy]);
+
+  // Team Workload KPIs Summary
+  const teamSummary = useMemo(() => {
+    const totalStaff = employees.length;
+    const staffWithTasks = employeeWorkloadStats.filter((e) => e.totalAssigned > 0).length;
+    const totalAssignedTasks = tasks.length;
+    const totalDoneTasks = tasks.filter((t) => t.status === 'DONE').length;
+    const totalOverdueTasks = tasks.filter((t) => {
+      if (t.status === 'DONE' || !t.dueDate) return false;
+      return new Date(t.dueDate).getTime() < Date.now();
+    }).length;
+    const teamVelocity = totalAssignedTasks > 0 ? Math.round((totalDoneTasks / totalAssignedTasks) * 100) : 0;
+
+    return { totalStaff, staffWithTasks, totalAssignedTasks, totalDoneTasks, totalOverdueTasks, teamVelocity };
+  }, [employees, employeeWorkloadStats, tasks]);
 
   // Metrics
   const counts = useMemo(() => {
@@ -316,12 +452,12 @@ export function TasksKanbanClient({
         </div>
 
         {/* Action Header: View Toggle + Create Task */}
-        <div className="flex items-center gap-2.5">
-          {/* List vs Board Toggle */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* List vs Board vs Team Workload Toggle */}
           <div className="flex items-center rounded-xl border border-border/70 bg-card/60 p-1 backdrop-blur-md">
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -332,7 +468,7 @@ export function TasksKanbanClient({
             </button>
             <button
               onClick={() => setViewMode('board')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'board'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -341,11 +477,34 @@ export function TasksKanbanClient({
               <Kanban className="size-3.5" />
               <span>Board View</span>
             </button>
+            <button
+              onClick={() => setViewMode('team')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === 'team'
+                  ? 'bg-gradient-to-r from-indigo-500 to-[#252175] text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Users className="size-3.5" />
+              <span>Team Workload</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                  viewMode === 'team'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {employees.length}
+              </span>
+            </button>
           </div>
 
           <Button
-            onClick={() => setCreateModalOpen(true)}
-            className="bg-[#252175] hover:bg-[#1e1a5f] text-white shadow-md shadow-[#252175]/25 font-semibold text-xs h-9 px-3.5 rounded-xl gap-1.5"
+            onClick={() => {
+              setAssigneeForNewTask(undefined);
+              setCreateModalOpen(true);
+            }}
+            className="bg-[#252175] hover:bg-[#1e1a5f] text-white shadow-md shadow-[#252175]/25 font-semibold text-xs h-9 px-3.5 rounded-xl gap-1.5 cursor-pointer"
           >
             <Plus className="size-4 text-[#f37021]" />
             <span>New Task</span>
@@ -353,94 +512,132 @@ export function TasksKanbanClient({
         </div>
       </div>
 
-      {/* ─── Simple Status Pill Tabs ──────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-3">
-        {[
-          { key: 'ALL', label: 'All Tasks', count: counts.total },
-          { key: 'TODO', label: 'To Do', count: counts.todo },
-          { key: 'IN_PROGRESS', label: 'In Progress', count: counts.inProgress },
-          { key: 'DONE', label: 'Completed', count: counts.done },
-          ...(counts.overdue > 0
-            ? [{ key: 'OVERDUE', label: 'Overdue', count: counts.overdue, isAlert: true }]
-            : []),
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setStatusTab(tab.key)}
-            className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-              statusTab === tab.key
-                ? tab.isAlert
-                  ? 'bg-rose-500 text-white shadow-xs'
-                  : 'bg-primary text-primary-foreground shadow-xs'
-                : 'bg-card/70 border border-border/70 text-muted-foreground hover:text-foreground hover:bg-card'
-            }`}
-          >
-            <span>{tab.label}</span>
-            <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
-                statusTab === tab.key
-                  ? 'bg-white/20 text-white'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {tab.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* ─── Search & Filters Bar ─────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search by task title, category, or employee..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-xs rounded-xl bg-card/60 border-border/70"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3.5" />
-            </button>
+      {/* ─── List & Board View Controls: Status Pill Tabs & Filter Bar ─────── */}
+      {viewMode !== 'team' && (
+        <>
+          {/* Active Employee Filter Banner */}
+          {selectedEmployeeId !== 'ALL' && (
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs">
+              <div className="flex items-center gap-2">
+                <User className="size-4 text-indigo-400 shrink-0" />
+                <span className="text-slate-200">
+                  Filtered by assignee:{' '}
+                  <strong className="text-white">
+                    {employees.find((e) => e.id === selectedEmployeeId)?.firstName}{' '}
+                    {employees.find((e) => e.id === selectedEmployeeId)?.lastName}
+                  </strong>{' '}
+                  ({filteredTasks.length} tasks)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedEmployeeId('ALL')}
+                  className="text-xs font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                >
+                  Show All Staff
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('team')}
+                  className="text-xs font-bold text-slate-300 hover:text-white bg-white/10 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  View Workload Matrix →
+                </button>
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* Filter Dropdowns: Employee & Priority */}
-        <div className="flex items-center gap-2">
-          {/* Employee filter */}
-          <select
-            value={selectedEmployeeId}
-            onChange={(e) => setSelectedEmployeeId(e.target.value)}
-            className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-          >
-            <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Team Members</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id} className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">
-                {emp.firstName} {emp.lastName} ({emp.employeeCode})
-              </option>
+          {/* Simple Status Pill Tabs */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-3">
+            {[
+              { key: 'ALL', label: 'All Tasks', count: counts.total },
+              { key: 'TODO', label: 'To Do', count: counts.todo },
+              { key: 'IN_PROGRESS', label: 'In Progress', count: counts.inProgress },
+              { key: 'DONE', label: 'Completed', count: counts.done },
+              ...(counts.overdue > 0
+                ? [{ key: 'OVERDUE', label: 'Overdue', count: counts.overdue, isAlert: true }]
+                : []),
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusTab(tab.key)}
+                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                  statusTab === tab.key
+                    ? tab.isAlert
+                      ? 'bg-rose-500 text-white shadow-xs'
+                      : 'bg-primary text-primary-foreground shadow-xs'
+                    : 'bg-card/70 border border-border/70 text-muted-foreground hover:text-foreground hover:bg-card'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                    statusTab === tab.key
+                      ? 'bg-white/20 text-white'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
             ))}
-          </select>
+          </div>
 
-          {/* Priority filter */}
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-          >
-            <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Priorities</option>
-            <option value="URGENT" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔴 Urgent</option>
-            <option value="HIGH" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🟡 High</option>
-            <option value="MEDIUM" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔵 Medium</option>
-            <option value="LOW" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🟢 Low</option>
-          </select>
-        </div>
-      </div>
+          {/* Search & Filters Bar */}
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by task title, category, or employee..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-9 text-xs rounded-xl bg-card/60 border-border/70"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Dropdowns: Employee & Priority */}
+            <div className="flex items-center gap-2">
+              {/* Employee filter */}
+              <select
+                value={selectedEmployeeId}
+                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Team Members</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id} className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">
+                    {emp.firstName} {emp.lastName} ({emp.employeeCode})
+                  </option>
+                ))}
+              </select>
+
+              {/* Priority filter */}
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Priorities</option>
+                <option value="URGENT" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔴 Urgent</option>
+                <option value="HIGH" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🟡 High</option>
+                <option value="MEDIUM" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔵 Medium</option>
+                <option value="LOW" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🟢 Low</option>
+              </select>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ─── View 1: Spacious, User-Friendly LIST VIEW ───────────────────── */}
       {viewMode === 'list' && (
@@ -706,6 +903,344 @@ export function TasksKanbanClient({
         </div>
       )}
 
+      {/* ─── View 3: Comprehensive Superadmin TEAM WORKLOAD MATRIX ────────── */}
+      {viewMode === 'team' && (
+        <div className="space-y-6">
+          {/* Top KPI Metrics Strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Total Active Workforce</p>
+                <h3 className="text-2xl font-black text-foreground mt-0.5">{teamSummary.totalStaff}</h3>
+                <p className="text-[11px] text-muted-foreground/80 mt-1">
+                  {teamSummary.staffWithTasks} assigned deliverables
+                </p>
+              </div>
+              <div className="size-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                <Users className="size-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Team Completion Rate</p>
+                <h3 className="text-2xl font-black text-emerald-500 mt-0.5">{teamSummary.teamVelocity}%</h3>
+                <p className="text-[11px] text-muted-foreground/80 mt-1">
+                  {teamSummary.totalDoneTasks} of {teamSummary.totalAssignedTasks} tasks completed
+                </p>
+              </div>
+              <div className="size-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <CheckCircle2 className="size-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">In-Flight Workload</p>
+                <h3 className="text-2xl font-black text-[#f37021] mt-0.5">
+                  {teamSummary.totalAssignedTasks - teamSummary.totalDoneTasks}
+                </h3>
+                <p className="text-[11px] text-muted-foreground/80 mt-1">
+                  Active in-progress & to-do
+                </p>
+              </div>
+              <div className="size-11 rounded-2xl bg-[#f37021]/10 border border-[#f37021]/20 flex items-center justify-center text-[#f37021]">
+                <Clock className="size-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Overdue / Blocked</p>
+                <h3 className={`text-2xl font-black mt-0.5 ${teamSummary.totalOverdueTasks > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                  {teamSummary.totalOverdueTasks}
+                </h3>
+                <p className="text-[11px] text-muted-foreground/80 mt-1">
+                  {teamSummary.totalOverdueTasks > 0 ? 'Tasks require intervention' : 'All deadlines on track'}
+                </p>
+              </div>
+              <div className={`size-11 rounded-2xl border flex items-center justify-center ${teamSummary.totalOverdueTasks > 0 ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-400'}`}>
+                <AlertTriangle className="size-5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Team Workload Controls Toolbar: Search, Dept Filter, Status Filter, Sort */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-md">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search staff by name, code (e.g. SX-001), or department..."
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                className="pl-9 h-9 text-xs rounded-xl bg-background/50 border-border/80"
+              />
+              {teamSearch && (
+                <button
+                  type="button"
+                  onClick={() => setTeamSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter controls */}
+            <div className="flex items-center flex-wrap gap-2">
+              {/* Department Filter */}
+              <select
+                value={teamDeptFilter}
+                onChange={(e) => setTeamDeptFilter(e.target.value)}
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-3 text-xs font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Departments</option>
+                {uniqueDepartments.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+
+              {/* Workload Status Filter */}
+              <select
+                value={teamWorkloadFilter}
+                onChange={(e) => setTeamWorkloadFilter(e.target.value as any)}
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-3 text-xs font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Workloads</option>
+                <option value="ACTIVE">With Active Tasks</option>
+                <option value="OVERDUE">⚠️ Overdue Alerts</option>
+                <option value="COMPLETED">✅ 100% Completed</option>
+                <option value="AVAILABLE">🟢 Available (0 Tasks)</option>
+              </select>
+
+              {/* Sort By */}
+              <select
+                value={teamSortBy}
+                onChange={(e) => setTeamSortBy(e.target.value as any)}
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-3 text-xs font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="assigned">Sort: Most Tasks Assigned</option>
+                <option value="completion">Sort: Highest Completion %</option>
+                <option value="overdue">Sort: Most Overdue</option>
+                <option value="name">Sort: Name (A-Z)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Employee Workload Cards Grid */}
+          {filteredEmployeeStats.length === 0 ? (
+            <div className="py-16 text-center text-muted-foreground rounded-2xl border border-border/70 bg-card/30">
+              <Users className="size-10 mx-auto opacity-30 mb-2" />
+              <p className="font-semibold text-sm">No team members match your filters</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Try clearing the search query or changing department filters.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTeamSearch('');
+                  setTeamDeptFilter('ALL');
+                  setTeamWorkloadFilter('ALL');
+                }}
+                className="mt-3 text-xs"
+              >
+                Reset Filters
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filteredEmployeeStats.map((emp) => {
+                const isExpanded = expandedEmpId === emp.id;
+
+                return (
+                  <div
+                    key={emp.id}
+                    className="flex flex-col rounded-3xl border border-border/70 bg-card/60 backdrop-blur-md p-5 transition-all hover:border-primary/40 shadow-xs relative overflow-hidden"
+                  >
+                    {/* Top Identity Row */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="size-12 rounded-2xl ring-2 ring-primary/20 shrink-0">
+                          {emp.photoUrl && (
+                            <AvatarImage src={emp.photoUrl} alt={emp.firstName} />
+                          )}
+                          <AvatarFallback className="bg-gradient-to-br from-[#252175] to-indigo-600 text-white font-mono font-bold text-sm">
+                            {getInitials(emp.firstName, emp.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm text-foreground truncate">
+                            {emp.firstName} {emp.lastName}
+                          </h4>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {emp.positionTitle || 'Staff Member'}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-md bg-secondary text-muted-foreground font-semibold">
+                              {emp.employeeCode}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.2 rounded-full bg-primary/10 text-primary font-medium truncate max-w-[120px]">
+                              {emp.departmentName || 'General'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Workload Status Badge */}
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 ${emp.loadStatus.badge}`}>
+                        <span className={`size-1.5 rounded-full ${emp.loadStatus.dot}`} />
+                        {emp.loadStatus.label}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar & Rate */}
+                    <div className="mt-4 pt-4 border-t border-border/60">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="font-semibold text-muted-foreground">Completion Velocity</span>
+                        <span className="font-mono font-bold text-foreground">
+                          {emp.completed} / {emp.totalAssigned} done ({emp.completionRate}%)
+                        </span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-secondary/80 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 transition-all duration-500"
+                          style={{ width: `${emp.completionRate}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4-Item Telemetry Matrix */}
+                    <div className="grid grid-cols-4 gap-2 mt-4 p-3 rounded-2xl bg-secondary/30 border border-border/50 text-center">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Assigned</span>
+                        <span className="text-base font-black text-foreground font-mono">{emp.totalAssigned}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-500 tracking-wider block">Done</span>
+                        <span className="text-base font-black text-emerald-500 font-mono">{emp.completed}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider block">Pending</span>
+                        <span className="text-base font-black text-amber-500 font-mono">{emp.inProgress + emp.todo}</span>
+                      </div>
+                      <div>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider block ${emp.overdue > 0 ? 'text-rose-500' : 'text-muted-foreground'}`}>Overdue</span>
+                        <span className={`text-base font-black font-mono ${emp.overdue > 0 ? 'text-rose-500' : 'text-muted-foreground'}`}>{emp.overdue}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Bar */}
+                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-border/60">
+                      <div className="flex items-center gap-1.5">
+                        {emp.totalAssigned > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedEmpId(isExpanded ? null : emp.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-xs font-semibold text-foreground transition-all cursor-pointer"
+                          >
+                            <span>Tasks ({emp.totalAssigned})</span>
+                            {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmployeeId(emp.id);
+                            setViewMode('list');
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-primary/10 text-xs font-semibold text-primary transition-all cursor-pointer"
+                          title="Open detailed list view filtered for this staff"
+                        >
+                          <span>Inspect in List</span>
+                          <ExternalLink className="size-3" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssigneeForNewTask(emp.id);
+                          setCreateModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#252175] hover:bg-[#1e1a5f] text-xs font-bold text-white transition-all cursor-pointer shadow-xs"
+                      >
+                        <Plus className="size-3.5 text-[#f37021]" />
+                        <span>Assign</span>
+                      </button>
+                    </div>
+
+                    {/* Expanded Task Roster within Card */}
+                    {isExpanded && emp.tasks.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-border/60 space-y-2 animate-fadeIn">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-1">
+                          <span>Assigned Tasks</span>
+                          <span>Status</span>
+                        </div>
+                        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                          {emp.tasks.map((task) => {
+                            const isDone = task.status === 'DONE';
+                            const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
+
+                            return (
+                              <div
+                                key={task.id}
+                                className={`flex items-center justify-between p-2 rounded-xl border border-border/50 text-xs transition-colors hover:bg-secondary/40 ${
+                                  isDone ? 'opacity-60 bg-secondary/20' : 'bg-background/40'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <button
+                                    onClick={() => handleUpdateStatus(task.id, isDone ? 'IN_PROGRESS' : 'DONE')}
+                                    className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors"
+                                  >
+                                    {isDone ? (
+                                      <CheckCircle2 className="size-4 text-emerald-500" />
+                                    ) : (
+                                      <Circle className="size-4 hover:text-primary" />
+                                    )}
+                                  </button>
+                                  <span
+                                    onClick={() => setSelectedTask(task)}
+                                    className={`truncate cursor-pointer hover:underline font-medium ${
+                                      isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                                    }`}
+                                  >
+                                    {task.title}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold border ${priority.badge}`}>
+                                    {priority.label}
+                                  </span>
+                                  <select
+                                    value={task.status}
+                                    onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
+                                    className="h-6 rounded-md px-1 text-[10px] font-bold border border-border bg-card text-foreground cursor-pointer focus:outline-none"
+                                  >
+                                    <option value="TODO">To Do</option>
+                                    <option value="IN_PROGRESS">In Progress</option>
+                                    <option value="IN_REVIEW">In Review</option>
+                                    <option value="DONE">Done</option>
+                                  </select>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ─── Task Details Modal ───────────────────────────────────────────── */}
       {selectedTask && (
         <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
@@ -846,9 +1381,12 @@ export function TasksKanbanClient({
       {/* ─── Linear Task Modal ────────────────────────────────────────── */}
       <LinearTaskModal
         open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
+        onOpenChange={(open) => {
+          setCreateModalOpen(open);
+          if (!open) setAssigneeForNewTask(undefined);
+        }}
         employees={employees}
-        defaultEmployeeId={selectedEmployeeId !== 'ALL' ? selectedEmployeeId : undefined}
+        defaultEmployeeId={assigneeForNewTask || (selectedEmployeeId !== 'ALL' ? selectedEmployeeId : undefined)}
         defaultStatus={newStatus}
         onTaskCreated={(createdTask) => {
           setTasks((prev) => [createdTask, ...prev]);
