@@ -195,7 +195,10 @@ export function DashboardClientView({
               employees={employees}
               initialTodayAttendance={todayAttendance}
             />
-            <EmployeeOverview employees={metrics.recentEmployees as any} />
+            <EmployeeOverview
+              employees={metrics.recentEmployees as any}
+              totalEmployeesCount={metrics.totalEmployees}
+            />
           </div>
 
           {/* Full-Width Real-time System Activity Feed */}
@@ -355,7 +358,10 @@ export function DashboardClientView({
           </div>
 
           {/* Recent Joiners full list */}
-          <EmployeeOverview employees={metrics.recentEmployees as any} />
+          <EmployeeOverview
+            employees={metrics.recentEmployees as any}
+            totalEmployeesCount={metrics.totalEmployees}
+          />
         </div>
       )}
     </div>
