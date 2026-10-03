@@ -9,6 +9,7 @@ import { Menu, Moon, Sun, Bell, LogOut, UserCircle, Shield } from 'lucide-react'
 import Link from 'next/link';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { CommandSearch } from './CommandSearch';
+import { HeaderPunchWidget } from '@/components/attendance/HeaderPunchWidget';
 
 export function Header() {
   const { setMobileMenuOpen, theme, toggleTheme } = useUIStore();
@@ -38,6 +39,8 @@ export function Header() {
 
       {/* Right Action Icons & User Menu */}
       <div className="flex items-center gap-2.5">
+        {/* Quick Punch Terminal Widget */}
+        <HeaderPunchWidget />
         {/* Theme Toggle */}
         <button
           type="button"
