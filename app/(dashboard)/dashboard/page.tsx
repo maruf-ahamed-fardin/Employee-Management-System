@@ -2,6 +2,10 @@ import { reportService } from '@/server/services/report.service';
 import { prisma } from '@/lib/db';
 import { DashboardClientView } from '@/components/dashboard/DashboardClientView';
 import { unstable_cache } from 'next/cache';
+import { getTodayDateString } from '@/lib/utils/date';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata = {
   title: 'Dashboard | SeloraX EMS',
@@ -34,24 +38,28 @@ const getCachedDepartments = unstable_cache(
 const getCachedOverviewEmployees = unstable_cache(
   async () =>
     prisma.employee.findMany({
+      where: { status: 'ACTIVE', deletedAt: null },
       select: {
         id: true,
         employeeCode: true,
         firstName: true,
         lastName: true,
+        email: true,
         photoUrl: true,
-        department: { select: { name: true } },
+        department: { select: { name: true, code: true } },
         position: { select: { title: true } },
       },
       orderBy: { firstName: 'asc' },
-      take: 60,
+      take: 100,
     }),
   ['dashboard-overview-employees'],
   { revalidate: 30, tags: ['employees'] }
 );
 
 export default async function DashboardPage() {
-  const [metrics, leaveTypes, employees, rawDepartments] = await Promise.all([
+  const today = getTodayDateString();
+
+  const [metrics, leaveTypes, employees, rawDepartments, todayAttendance] = await Promise.all([
     reportService.getDashboardMetrics().catch(() => ({
       totalEmployees: 48,
       activeEmployees: 46,
@@ -69,6 +77,26 @@ export default async function DashboardPage() {
     getCachedLeaveTypes(),
     getCachedOverviewEmployees(),
     getCachedDepartments(),
+    prisma.attendance.findMany({
+      where: { workDate: today },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            photoUrl: true,
+            department: { select: { name: true, code: true } },
+            position: { select: { title: true } },
+          },
+        },
+        records: {
+          orderBy: { occurredAt: 'asc' },
+        },
+      },
+      orderBy: [{ firstInAt: 'desc' }, { employee: { firstName: 'asc' } }],
+    }),
   ]);
 
   const departments = rawDepartments.map((dept) => ({
@@ -84,6 +112,7 @@ export default async function DashboardPage() {
       leaveTypes={leaveTypes}
       employees={employees}
       departments={departments}
+      todayAttendance={todayAttendance}
     />
   );
 }

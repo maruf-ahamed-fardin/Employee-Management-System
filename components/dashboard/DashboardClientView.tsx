@@ -50,6 +50,7 @@ interface DashboardClientViewProps {
   leaveTypes: any[];
   employees: any[];
   departments?: DepartmentMetric[];
+  todayAttendance?: any[];
 }
 
 const DEPT_BADGES: Record<string, { badge: string; dot: string }> = {
@@ -84,6 +85,7 @@ export function DashboardClientView({
   leaveTypes,
   employees,
   departments = [],
+  todayAttendance = [],
 }: DashboardClientViewProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
 
@@ -190,6 +192,8 @@ export function DashboardClientView({
             <AttendanceChart
               attendanceMetrics={metrics.attendance}
               totalEmployees={metrics.totalEmployees}
+              employees={employees}
+              initialTodayAttendance={todayAttendance}
             />
             <EmployeeOverview employees={metrics.recentEmployees as any} />
           </div>
