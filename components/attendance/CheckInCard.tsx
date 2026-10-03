@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
@@ -20,6 +20,23 @@ export function CheckInCard({
   const hasCheckedIn = Boolean(attendance?.firstInAt);
   const hasCheckedOut = Boolean(attendance?.lastOutAt);
 
+  useEffect(() => {
+    if (initialAttendance) {
+      setAttendance(initialAttendance);
+    }
+  }, [initialAttendance]);
+
+  useEffect(() => {
+    const handleBroadcast = (e: any) => {
+      if (e?.detail?.attendance) {
+        setAttendance(e.detail.attendance);
+        if (onRefresh) onRefresh();
+      }
+    };
+    window.addEventListener('ems:attendance-changed', handleBroadcast);
+    return () => window.removeEventListener('ems:attendance-changed', handleBroadcast);
+  }, [onRefresh]);
+
   const handlePunch = async (type: 'CHECK_IN' | 'CHECK_OUT') => {
     setPunching(true);
     try {
@@ -31,14 +48,21 @@ export function CheckInCard({
       const data = await res.json();
       if (data.success) {
         toast.success(type === 'CHECK_IN' ? 'Checked in successfully!' : 'Checked out successfully!');
-        if (onRefresh) onRefresh();
-        // Optimistic refresh
         const now = new Date().toISOString();
-        setAttendance((prev: any) => ({
-          ...prev,
-          firstInAt: type === 'CHECK_IN' ? now : prev?.firstInAt,
-          lastOutAt: type === 'CHECK_OUT' ? now : prev?.lastOutAt,
-        }));
+        const updatedAtt = data.data?.attendance || {
+          ...attendance,
+          firstInAt: type === 'CHECK_IN' ? now : attendance?.firstInAt,
+          lastOutAt: type === 'CHECK_OUT' ? now : attendance?.lastOutAt,
+        };
+        setAttendance(updatedAtt);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('ems:attendance-changed', {
+              detail: { type, attendance: updatedAtt },
+            })
+          );
+        }
+        if (onRefresh) onRefresh();
       } else {
         toast.error(data.error || 'Failed to punch');
       }

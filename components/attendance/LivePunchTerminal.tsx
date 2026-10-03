@@ -144,10 +144,59 @@ export function LivePunchTerminal({
     );
   };
 
-  // Sync state if initialAttendance changes
+  // Sync state if initialAttendance changes or broadcast event arrives
   useEffect(() => {
-    setAttendance(initialAttendance);
+    if (initialAttendance) {
+      setAttendance(initialAttendance);
+    }
+    // Always fetch latest from server on mount to ensure fresh state
+    fetch('/api/attendance/today', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data?.attendance) {
+          setAttendance(data.data.attendance);
+        }
+      })
+      .catch(() => {});
   }, [initialAttendance]);
+
+  useEffect(() => {
+    const handleBroadcast = (e: any) => {
+      if (e?.detail?.attendance) {
+        setAttendance(e.detail.attendance);
+        if (onRefresh) onRefresh();
+      }
+    };
+    window.addEventListener('ems:attendance-changed', handleBroadcast);
+    return () => window.removeEventListener('ems:attendance-changed', handleBroadcast);
+  }, [onRefresh]);
+
+  const handleResumeShift = async () => {
+    setPunching(true);
+    try {
+      const res = await fetch('/api/attendance/resume', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        const updatedAtt = data.data?.attendance;
+        setAttendance(updatedAtt);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('ems:attendance-changed', {
+              detail: { type: 'CHECK_IN', attendance: updatedAtt },
+            })
+          );
+        }
+        toast.success('Shift resumed! Welcome back to active duty.');
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error(data.error || 'Failed to resume shift');
+      }
+    } catch {
+      toast.error('Network error resuming shift');
+    } finally {
+      setPunching(false);
+    }
+  };
 
   // Clock tick every second for current time and auto lunch/prayer check
   useEffect(() => {
@@ -258,12 +307,20 @@ export function LivePunchTerminal({
             ? `Checked in successfully! ${currentShiftConfig.shortLabel} started.`
             : 'Checked out successfully! Have a restful time.'
         );
-        setAttendance((prev: any) => ({
-          ...prev,
-          firstInAt: type === 'CHECK_IN' ? now : prev?.firstInAt,
-          lastOutAt: type === 'CHECK_OUT' ? now : prev?.lastOutAt,
-          status: type === 'CHECK_IN' ? 'PRESENT' : prev?.status,
-        }));
+        const updatedAtt = data.data?.attendance || {
+          ...attendance,
+          firstInAt: type === 'CHECK_IN' ? now : attendance?.firstInAt,
+          lastOutAt: type === 'CHECK_OUT' ? now : attendance?.lastOutAt,
+          status: type === 'CHECK_IN' ? 'PRESENT' : attendance?.status,
+        };
+        setAttendance(updatedAtt);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('ems:attendance-changed', {
+              detail: { type, attendance: updatedAtt },
+            })
+          );
+        }
         if (type === 'CHECK_OUT') {
           setIsCoffeeBreakActive(false);
         }
@@ -566,9 +623,21 @@ export function LivePunchTerminal({
                 <span>{punching ? 'Recording...' : `Clock Out (${currentShiftConfig.shortLabel})`}</span>
               </button>
             ) : (
-              <div className="w-full h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-sm flex items-center justify-center gap-2 shadow-sm">
-                <CheckCircle2 className="size-5" />
-                <span>{currentShiftConfig.shortLabel} Fully Completed</span>
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
+                <div className="flex-1 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm px-4">
+                  <CheckCircle2 className="size-4.5 text-emerald-500 shrink-0" />
+                  <span>{currentShiftConfig.shortLabel} Fully Completed</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResumeShift}
+                  disabled={punching}
+                  className="h-12 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0"
+                  title="Accidentally clocked out? Click to resume shift"
+                >
+                  <RotateCcw className={`size-4 ${punching ? 'animate-spin' : ''}`} />
+                  <span>Resume Shift</span>
+                </button>
               </div>
             )}
           </div>

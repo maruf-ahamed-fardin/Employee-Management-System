@@ -33,6 +33,11 @@ export const attendanceService = {
     });
   },
 
+  async resumeShift(employeeId: string) {
+    const today = getTodayDateString();
+    return attendanceRepository.resumeShift(employeeId, today);
+  },
+
   async correct(input: AttendanceCorrectionInput) {
     return attendanceRepository.updateCorrection(input.attendanceId, {
       firstInAt: input.firstInAt,

@@ -3,6 +3,9 @@ import { getTodayDateString } from '@/lib/utils/date';
 import { getSession } from '@/lib/auth/session';
 import { AttendanceClient } from './AttendanceClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Attendance',
 };
@@ -11,10 +14,28 @@ export default async function AttendancePage() {
   const today = getTodayDateString();
   const session = await getSession();
 
+  let targetEmployeeId = session?.employeeId;
+  if (!targetEmployeeId && session?.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { employeeId: true },
+    });
+    targetEmployeeId = dbUser?.employeeId || null;
+  }
+  if (!targetEmployeeId) {
+    const firstEmp = await prisma.employee.findFirst({ select: { id: true } });
+    targetEmployeeId = firstEmp?.id || null;
+  }
+
   const [todayAttendance, attendanceList, departments, employees] = await Promise.all([
-    session?.employeeId
+    targetEmployeeId
       ? prisma.attendance.findUnique({
-          where: { employeeId_workDate: { employeeId: session.employeeId, workDate: today } },
+          where: { employeeId_workDate: { employeeId: targetEmployeeId, workDate: today } },
+          include: {
+            records: {
+              orderBy: { occurredAt: 'asc' },
+            },
+          },
         })
       : null,
     prisma.attendance.findMany({

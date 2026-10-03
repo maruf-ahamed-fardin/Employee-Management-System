@@ -50,6 +50,7 @@ interface DashboardClientViewProps {
   leaveTypes: any[];
   employees: any[];
   departments?: DepartmentMetric[];
+  todayAttendance?: any[];
 }
 
 const DEPT_BADGES: Record<string, { badge: string; dot: string }> = {
@@ -84,6 +85,7 @@ export function DashboardClientView({
   leaveTypes,
   employees,
   departments = [],
+  todayAttendance = [],
 }: DashboardClientViewProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
 
@@ -187,8 +189,16 @@ export function DashboardClientView({
 
           {/* 12-Column Balanced Bento Grid: Trends (8 cols) + Recent Joiners (4 cols) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <AttendanceChart />
-            <EmployeeOverview employees={metrics.recentEmployees as any} />
+            <AttendanceChart
+              attendanceMetrics={metrics.attendance}
+              totalEmployees={metrics.totalEmployees}
+              employees={employees}
+              initialTodayAttendance={todayAttendance}
+            />
+            <EmployeeOverview
+              employees={metrics.recentEmployees as any}
+              totalEmployeesCount={metrics.totalEmployees}
+            />
           </div>
 
           {/* Full-Width Real-time System Activity Feed */}
@@ -348,7 +358,10 @@ export function DashboardClientView({
           </div>
 
           {/* Recent Joiners full list */}
-          <EmployeeOverview employees={metrics.recentEmployees as any} />
+          <EmployeeOverview
+            employees={metrics.recentEmployees as any}
+            totalEmployeesCount={metrics.totalEmployees}
+          />
         </div>
       )}
     </div>
