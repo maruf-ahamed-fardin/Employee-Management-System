@@ -452,41 +452,41 @@ export function TasksKanbanClient({
         </div>
 
         {/* Action Header: View Toggle + Create Task */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           {/* List vs Board vs Team Workload Toggle */}
-          <div className="flex items-center rounded-xl border border-border/70 bg-card/60 p-1 backdrop-blur-md">
+          <div className="flex items-center rounded-xl border border-border/70 bg-card/60 p-1 backdrop-blur-md w-full sm:w-auto justify-between sm:justify-start">
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <LayoutList className="size-3.5" />
-              <span>List View</span>
+              <span>List</span>
             </button>
             <button
               onClick={() => setViewMode('board')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'board'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Kanban className="size-3.5" />
-              <span>Board View</span>
+              <span>Board</span>
             </button>
             <button
               onClick={() => setViewMode('team')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'team'
                   ? 'bg-gradient-to-r from-indigo-500 to-[#252175] text-white shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Users className="size-3.5" />
-              <span>Team Workload</span>
+              <span>Team</span>
               <span
                 className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
                   viewMode === 'team'
@@ -504,7 +504,7 @@ export function TasksKanbanClient({
               setAssigneeForNewTask(undefined);
               setCreateModalOpen(true);
             }}
-            className="bg-[#252175] hover:bg-[#1e1a5f] text-white shadow-md shadow-[#252175]/25 font-semibold text-xs h-9 px-3.5 rounded-xl gap-1.5 cursor-pointer"
+            className="w-full sm:w-auto bg-[#252175] hover:bg-[#1e1a5f] text-white shadow-md shadow-[#252175]/25 font-semibold text-xs h-9 px-3.5 rounded-xl gap-1.5 cursor-pointer justify-center"
           >
             <Plus className="size-4 text-[#f37021]" />
             <span>New Task</span>
@@ -549,7 +549,7 @@ export function TasksKanbanClient({
           )}
 
           {/* Simple Status Pill Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-3 overflow-x-auto no-scrollbar scroll-smooth">
             {[
               { key: 'ALL', label: 'All Tasks', count: counts.total },
               { key: 'TODO', label: 'To Do', count: counts.todo },
@@ -562,7 +562,7 @@ export function TasksKanbanClient({
               <button
                 key={tab.key}
                 onClick={() => setStatusTab(tab.key)}
-                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   statusTab === tab.key
                     ? tab.isAlert
                       ? 'bg-rose-500 text-white shadow-xs'
@@ -587,19 +587,20 @@ export function TasksKanbanClient({
           {/* Search & Filters Bar */}
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             {/* Search */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search by task title, category, or employee..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9 text-xs rounded-xl bg-card/60 border-border/70"
+                className="pl-9 h-9 text-xs rounded-xl bg-card/60 border-border/70 w-full"
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="size-3.5" />
                 </button>
@@ -607,12 +608,12 @@ export function TasksKanbanClient({
             </div>
 
             {/* Filter Dropdowns: Employee & Priority */}
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
               {/* Employee filter */}
               <select
                 value={selectedEmployeeId}
                 onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-[11px] sm:text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer truncate"
               >
                 <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Team Members</option>
                 {employees.map((emp) => (
@@ -626,7 +627,7 @@ export function TasksKanbanClient({
               <select
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
-                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 text-[11px] sm:text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer truncate"
               >
                 <option value="ALL" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">All Priorities</option>
                 <option value="URGENT" className="bg-white dark:bg-[#0d121f] text-slate-900 dark:text-slate-100">🔴 Urgent</option>
@@ -907,75 +908,75 @@ export function TasksKanbanClient({
       {viewMode === 'team' && (
         <div className="space-y-6">
           {/* Top KPI Metrics Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Total Active Workforce</p>
-                <h3 className="text-2xl font-black text-foreground mt-0.5">{teamSummary.totalStaff}</h3>
-                <p className="text-[11px] text-muted-foreground/80 mt-1">
-                  {teamSummary.staffWithTasks} assigned deliverables
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">Total Workforce</p>
+                <h3 className="text-xl sm:text-2xl font-black text-foreground mt-0.5">{teamSummary.totalStaff}</h3>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/80 mt-0.5 truncate">
+                  {teamSummary.staffWithTasks} assigned tasks
                 </p>
               </div>
-              <div className="size-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
-                <Users className="size-5" />
+              <div className="size-8 sm:size-11 rounded-xl sm:rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 shrink-0">
+                <Users className="size-4 sm:size-5" />
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Team Completion Rate</p>
-                <h3 className="text-2xl font-black text-emerald-500 mt-0.5">{teamSummary.teamVelocity}%</h3>
-                <p className="text-[11px] text-muted-foreground/80 mt-1">
-                  {teamSummary.totalDoneTasks} of {teamSummary.totalAssignedTasks} tasks completed
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">Completion Rate</p>
+                <h3 className="text-xl sm:text-2xl font-black text-emerald-500 mt-0.5">{teamSummary.teamVelocity}%</h3>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/80 mt-0.5 truncate">
+                  {teamSummary.totalDoneTasks}/{teamSummary.totalAssignedTasks} tasks done
                 </p>
               </div>
-              <div className="size-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                <CheckCircle2 className="size-5" />
+              <div className="size-8 sm:size-11 rounded-xl sm:rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                <CheckCircle2 className="size-4 sm:size-5" />
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">In-Flight Workload</p>
-                <h3 className="text-2xl font-black text-[#f37021] mt-0.5">
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">In-Flight Tasks</p>
+                <h3 className="text-xl sm:text-2xl font-black text-[#f37021] mt-0.5">
                   {teamSummary.totalAssignedTasks - teamSummary.totalDoneTasks}
                 </h3>
-                <p className="text-[11px] text-muted-foreground/80 mt-1">
-                  Active in-progress & to-do
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/80 mt-0.5 truncate">
+                  Active in-progress & todo
                 </p>
               </div>
-              <div className="size-11 rounded-2xl bg-[#f37021]/10 border border-[#f37021]/20 flex items-center justify-center text-[#f37021]">
-                <Clock className="size-5" />
+              <div className="size-8 sm:size-11 rounded-xl sm:rounded-2xl bg-[#f37021]/10 border border-[#f37021]/20 flex items-center justify-center text-[#f37021] shrink-0">
+                <Clock className="size-4 sm:size-5" />
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Overdue / Blocked</p>
-                <h3 className={`text-2xl font-black mt-0.5 ${teamSummary.totalOverdueTasks > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">Overdue / Blocked</p>
+                <h3 className={`text-xl sm:text-2xl font-black mt-0.5 ${teamSummary.totalOverdueTasks > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
                   {teamSummary.totalOverdueTasks}
                 </h3>
-                <p className="text-[11px] text-muted-foreground/80 mt-1">
-                  {teamSummary.totalOverdueTasks > 0 ? 'Tasks require intervention' : 'All deadlines on track'}
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/80 mt-0.5 truncate">
+                  {teamSummary.totalOverdueTasks > 0 ? 'Action required' : 'Deadlines on track'}
                 </p>
               </div>
-              <div className={`size-11 rounded-2xl border flex items-center justify-center ${teamSummary.totalOverdueTasks > 0 ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-400'}`}>
-                <AlertTriangle className="size-5" />
+              <div className={`size-8 sm:size-11 rounded-xl sm:rounded-2xl border flex items-center justify-center shrink-0 ${teamSummary.totalOverdueTasks > 0 ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-400'}`}>
+                <AlertTriangle className="size-4 sm:size-5" />
               </div>
             </div>
           </div>
 
           {/* Team Workload Controls Toolbar: Search, Dept Filter, Status Filter, Sort */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-md">
+          <div className="flex flex-col gap-2.5 p-3 sm:p-4 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-md">
             {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search staff by name, code (e.g. SX-001), or department..."
                 value={teamSearch}
                 onChange={(e) => setTeamSearch(e.target.value)}
-                className="pl-9 h-9 text-xs rounded-xl bg-background/50 border-border/80"
+                className="pl-9 h-9 text-xs rounded-xl bg-background/50 border-border/80 w-full"
               />
               {teamSearch && (
                 <button
@@ -989,14 +990,14 @@ export function TasksKanbanClient({
             </div>
 
             {/* Filter controls */}
-            <div className="flex items-center flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full md:w-auto">
               {/* Department Filter */}
               <select
                 value={teamDeptFilter}
                 onChange={(e) => setTeamDeptFilter(e.target.value)}
-                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-3 text-xs font-semibold focus:outline-none cursor-pointer"
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold focus:outline-none cursor-pointer truncate"
               >
-                <option value="ALL">All Departments</option>
+                <option value="ALL">All Depts</option>
                 {uniqueDepartments.map((dept) => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
@@ -1006,23 +1007,23 @@ export function TasksKanbanClient({
               <select
                 value={teamWorkloadFilter}
                 onChange={(e) => setTeamWorkloadFilter(e.target.value as any)}
-                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-3 text-xs font-semibold focus:outline-none cursor-pointer"
+                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold focus:outline-none cursor-pointer truncate"
               >
                 <option value="ALL">All Workloads</option>
                 <option value="ACTIVE">With Active Tasks</option>
-                <option value="OVERDUE">⚠️ Overdue Alerts</option>
-                <option value="COMPLETED">✅ 100% Completed</option>
-                <option value="AVAILABLE">🟢 Available (0 Tasks)</option>
+                <option value="OVERDUE">⚠️ Overdue</option>
+                <option value="COMPLETED">✅ 100% Done</option>
+                <option value="AVAILABLE">🟢 Available (0)</option>
               </select>
 
               {/* Sort By */}
               <select
                 value={teamSortBy}
                 onChange={(e) => setTeamSortBy(e.target.value as any)}
-                className="h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-3 text-xs font-semibold focus:outline-none cursor-pointer"
+                className="col-span-2 sm:col-span-1 h-9 rounded-xl border border-border/70 bg-card dark:bg-[#131b2e] text-foreground dark:text-slate-100 px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold focus:outline-none cursor-pointer truncate"
               >
-                <option value="assigned">Sort: Most Tasks Assigned</option>
-                <option value="completion">Sort: Highest Completion %</option>
+                <option value="assigned">Sort: Most Tasks</option>
+                <option value="completion">Sort: Highest %</option>
                 <option value="overdue">Sort: Most Overdue</option>
                 <option value="name">Sort: Name (A-Z)</option>
               </select>
@@ -1133,13 +1134,13 @@ export function TasksKanbanClient({
                     </div>
 
                     {/* Action Bar */}
-                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-border/60">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-border/60">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         {emp.totalAssigned > 0 && (
                           <button
                             type="button"
                             onClick={() => setExpandedEmpId(isExpanded ? null : emp.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-xs font-semibold text-foreground transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-[11px] sm:text-xs font-semibold text-foreground transition-all cursor-pointer whitespace-nowrap"
                           >
                             <span>Tasks ({emp.totalAssigned})</span>
                             {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
@@ -1151,7 +1152,7 @@ export function TasksKanbanClient({
                             setSelectedEmployeeId(emp.id);
                             setViewMode('list');
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-primary/10 text-xs font-semibold text-primary transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-primary/10 text-[11px] sm:text-xs font-semibold text-primary transition-all cursor-pointer whitespace-nowrap"
                           title="Open detailed list view filtered for this staff"
                         >
                           <span>Inspect in List</span>
@@ -1165,7 +1166,7 @@ export function TasksKanbanClient({
                           setAssigneeForNewTask(emp.id);
                           setCreateModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#252175] hover:bg-[#1e1a5f] text-xs font-bold text-white transition-all cursor-pointer shadow-xs"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#252175] hover:bg-[#1e1a5f] text-[11px] sm:text-xs font-bold text-white transition-all cursor-pointer shadow-xs ml-auto sm:ml-0 whitespace-nowrap"
                       >
                         <Plus className="size-3.5 text-[#f37021]" />
                         <span>Assign</span>

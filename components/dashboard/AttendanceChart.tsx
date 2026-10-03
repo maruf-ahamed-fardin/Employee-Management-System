@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Gauge,
@@ -339,6 +340,11 @@ export function AttendanceChart({
 
   // ─── Interactive Telemetry Selection State ─────────────────────────────
   // Can be selected via clicking a Day (Mon-Fri) OR clicking an Employee
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [selectedDay, setSelectedDay] = useState<DayAttendance | null>(
     () => weeklyData.find((d) => d.isToday) || weeklyData[4]
   );
@@ -511,13 +517,13 @@ export function AttendanceChart({
 
       {/* ─── 1. Header Bar: Title, Shift Info & Quick Superadmin Link ─────── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-4 border-b border-slate-200/80 dark:border-white/10 relative z-10">
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="size-10 sm:size-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/25 ring-1 ring-white/20 shrink-0 flex items-center justify-center text-white">
             <Gauge className="size-5 sm:size-5.5 text-white" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+              <h3 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-white">
                 Workforce Velocity & Attendance Dial
               </h3>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono whitespace-nowrap shrink-0">
@@ -526,20 +532,20 @@ export function AttendanceChart({
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-              <span className="whitespace-nowrap font-medium">Shift: 09:00 AM – 06:00 PM BST</span>
+              <span className="whitespace-nowrap font-medium text-[11px] sm:text-xs">Shift: 09:00 AM – 06:00 PM BST</span>
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
-              <span className="text-emerald-500 font-semibold whitespace-nowrap">Interactive Dial Sync</span>
+              <span className="text-emerald-500 font-semibold whitespace-nowrap text-[11px] sm:text-xs">Interactive Dial Sync</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2 shrink-0 self-start lg:self-auto">
+        <div className="flex items-center flex-wrap gap-2 shrink-0 self-start lg:self-auto w-full sm:w-auto">
           {/* Active Context Reset Pill if day or employee selected */}
           {(selectedStaff || (selectedDay && !selectedDay.isToday)) && (
             <button
               type="button"
               onClick={resetToToday}
-              className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-xs font-bold text-cyan-400 transition-all cursor-pointer shadow-sm"
+              className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-[11px] sm:text-xs font-bold text-cyan-400 transition-all cursor-pointer shadow-sm"
               title="Return to today's live team overview"
             >
               <RotateCcw className="size-3" />
@@ -550,14 +556,14 @@ export function AttendanceChart({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer shadow-sm"
+            className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-[11px] sm:text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer shadow-sm"
           >
             <Maximize2 className="size-3.5" />
             <span>Full Roster Audit</span>
           </button>
           <Link
             href="/attendance"
-            className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+            className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
           >
             <span>Punch Terminal</span>
             <ChevronRight className="size-3.5 text-slate-400" />
@@ -1248,21 +1254,21 @@ export function AttendanceChart({
         )}
       </div>
 
-      {/* ─── 4. SUPERADMIN FULL AUDIT MODAL DIALOG ────────────────────────── */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-5xl h-[85vh] max-h-[740px] rounded-3xl border border-white/15 bg-[#090d16] shadow-2xl flex flex-col overflow-hidden relative">
+      {/* ─── 4. SUPERADMIN FULL AUDIT MODAL DIALOG (Portaled to Body) ─────── */}
+      {mounted && isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 pb-16 md:pb-6 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-5xl h-[84dvh] sm:h-[85vh] max-h-[740px] rounded-2xl sm:rounded-3xl border border-white/15 bg-[#090d16] shadow-2xl flex flex-col overflow-hidden relative">
             {/* Modal Header */}
-            <div className="p-5 sm:p-6 pb-4 border-b border-white/10 shrink-0 flex items-center justify-between bg-[#090d16]">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                  <ShieldCheck className="size-5" />
+            <div className="p-3.5 sm:p-6 pb-3 sm:pb-4 border-b border-white/10 shrink-0 flex items-center justify-between bg-[#090d16]">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="size-9 sm:size-10 rounded-xl sm:rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                  <ShieldCheck className="size-4.5 sm:size-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-white">
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-lg font-black text-white truncate sm:whitespace-normal">
                     Superadmin Attendance & Punch Telemetry
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate sm:whitespace-normal">
                     Live operational audit of all {totalCount} workforce check-in and check-out logs
                   </p>
                 </div>
@@ -1270,15 +1276,15 @@ export function AttendanceChart({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="size-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                className="size-8 sm:size-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
               >
                 <X className="size-4" />
               </button>
             </div>
 
             {/* Modal Quick Controls Toolbar */}
-            <div className="px-5 sm:px-6 py-3 border-b border-white/5 bg-white/[0.02] shrink-0 flex flex-wrap items-center justify-between gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-md">
+            <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 border-b border-white/5 bg-white/[0.02] shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+              <div className="relative flex-1 min-w-0 w-full sm:max-w-md">
                 <Search className="size-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
@@ -1289,29 +1295,29 @@ export function AttendanceChart({
                 />
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={exportRosterCSV}
-                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-bold text-emerald-400 transition-all cursor-pointer"
+                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-bold text-emerald-400 transition-all cursor-pointer"
                 >
                   <FileSpreadsheet className="size-3.5" />
                   <span>Export CSV Log</span>
                 </button>
                 <Link
                   href="/attendance"
-                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all cursor-pointer"
+                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all cursor-pointer"
                 >
-                  <span>Attendance Terminal</span>
+                  <span>Terminal</span>
                   <ExternalLink className="size-3.5" />
                 </Link>
               </div>
             </div>
 
             {/* Modal Table Container - Scrollable area */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-4 sm:p-6">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.01] overflow-hidden">
-                <table className="w-full min-w-[800px] text-left text-xs">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-3 sm:p-6">
+              <div className="rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.01] overflow-hidden">
+                <table className="w-full min-w-[760px] text-left text-xs">
                   <thead className="bg-white/[0.04] text-slate-400 uppercase text-[10px] font-bold border-b border-white/10 sticky top-0 backdrop-blur-md">
                     <tr>
                       <th className="py-3 px-4 min-w-[170px]">Employee</th>
@@ -1333,11 +1339,11 @@ export function AttendanceChart({
                         <tr key={person.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2.5">
-                              <div className="size-7 rounded-lg bg-indigo-500/20 text-indigo-300 font-mono font-bold flex items-center justify-center text-xs">
+                              <div className="size-7 rounded-lg bg-indigo-500/20 text-indigo-300 font-mono font-bold flex items-center justify-center text-xs shrink-0">
                                 {initials}
                               </div>
-                              <div>
-                                <span className="font-bold text-white block">{person.fullName}</span>
+                              <div className="min-w-0">
+                                <span className="font-bold text-white block truncate">{person.fullName}</span>
                                 <span className="text-[10px] font-mono text-slate-400">
                                   {person.employeeCode}
                                 </span>
@@ -1416,18 +1422,19 @@ export function AttendanceChart({
             </div>
 
             {/* Modal Footer Summary - Fixed and NEVER clipped! */}
-            <div className="px-5 sm:px-6 py-3.5 border-t border-white/10 bg-[#060a12] shrink-0 flex items-center justify-between text-xs text-slate-400">
-              <div className="flex items-center gap-3">
+            <div className="px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-t border-white/10 bg-[#060a12] shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-3 text-[11px] sm:text-xs text-slate-400">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <span className="text-emerald-400 font-bold whitespace-nowrap">● {arrivedCount} Arrived</span>
                 <span className="text-indigo-400 font-bold whitespace-nowrap">● {pendingCount} Pending</span>
                 <span className="text-amber-400 font-bold whitespace-nowrap">● {lateCount} Late</span>
               </div>
-              <span className="font-mono text-slate-400 whitespace-nowrap text-xs">
+              <span className="font-mono text-slate-400 whitespace-nowrap text-[10px] sm:text-xs">
                 Shift: 09:00 AM – 06:00 PM BST
               </span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
