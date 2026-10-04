@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils/format';
 import { ChevronLeft, Sparkles } from 'lucide-react';
 import { SeloraLogo, SeloraIcon } from '@/components/brand/SeloraLogo';
 
-export function Sidebar() {
+export function Sidebar({ organizationName = 'SeloraX Enterprise' }: { organizationName?: string }) {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const { user } = useAuthStore();
@@ -127,7 +127,7 @@ export function Sidebar() {
         <div className="p-3 m-3 rounded-2xl bg-gradient-to-br from-[#252175]/8 via-[#f37021]/6 to-transparent border border-[#252175]/15 dark:border-[#818cf8]/20 dark:from-[#4f46e5]/10 dark:via-[#f37021]/10">
           <div className="flex items-center gap-2 text-xs font-bold text-[#252175] dark:text-[#818cf8]">
             <Sparkles className="size-3.5 text-[#f37021]" />
-            <span>SeloraX Enterprise</span>
+            <span className="truncate">{organizationName}</span>
           </div>
           <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
             Workforce telemetry & active operations.

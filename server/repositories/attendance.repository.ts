@@ -65,7 +65,12 @@ export const attendanceRepository = {
     occurredAt: string;
     source?: string;
     ip?: string | null;
+    /** Minutes past shift start for a CHECK_IN; only applied to the first check-in of the day. */
+    lateMinutes?: number;
   }) {
+    const lateMinutes = params.type === 'CHECK_IN' ? params.lateMinutes || 0 : 0;
+    const arrival = { status: lateMinutes > 0 ? 'LATE' : 'PRESENT', lateMinutes };
+
     let attendance = await prisma.attendance.findUnique({
       where: {
         employeeId_workDate: {
@@ -81,7 +86,7 @@ export const attendanceRepository = {
           employeeId: params.employeeId,
           workDate: params.workDate,
           firstInAt: params.type === 'CHECK_IN' ? params.occurredAt : null,
-          status: 'PRESENT',
+          ...arrival,
         },
       });
     }
@@ -102,7 +107,7 @@ export const attendanceRepository = {
     if (params.type === 'CHECK_IN' && !attendance.firstInAt) {
       await prisma.attendance.update({
         where: { id: attendance.id },
-        data: { firstInAt: params.occurredAt },
+        data: { firstInAt: params.occurredAt, ...arrival },
       });
     } else if (params.type === 'CHECK_OUT') {
       const firstIn = attendance.firstInAt ? new Date(attendance.firstInAt).getTime() : 0;
