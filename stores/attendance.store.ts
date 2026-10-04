@@ -117,8 +117,8 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
 
         toast.success(
           type === 'CHECK_IN'
-            ? 'Clocked in successfully! Workday started.'
-            : 'Clocked out successfully! Have a great evening.'
+            ? 'Checked in successfully! Workday started.'
+            : 'Checked out successfully! Have a great evening.'
         );
         return true;
       } else {

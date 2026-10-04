@@ -32,3 +32,6 @@
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Uploaded employee documents (local storage provider)
+/storage/

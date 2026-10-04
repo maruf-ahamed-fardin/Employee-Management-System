@@ -1,6 +1,8 @@
 import { attendanceRepository } from '@/server/repositories/attendance.repository';
 import type { AttendanceCorrectionInput, PunchInput } from '@/lib/validations/attendance';
 import { getTodayDateString } from '@/lib/utils/date';
+import { prisma } from '@/lib/db';
+import { getAttendanceSettings, localClock, minutesLate } from '@/lib/settings';
 
 export const attendanceService = {
   async getTodayAttendance(employeeId: string) {
@@ -21,15 +23,24 @@ export const attendanceService = {
 
   async punch(employeeId: string, input: PunchInput, ip?: string | null) {
     const today = getTodayDateString();
-    const now = new Date().toISOString();
+    const now = new Date();
+
+    // Lateness follows the attendance policy in Settings (shift start, grace period, working days, holidays)
+    let lateMinutes = 0;
+    if (input.type === 'CHECK_IN') {
+      const settings = await getAttendanceSettings();
+      const holiday = await prisma.holiday.findUnique({ where: { date: localClock(now, settings.timezone).date }, select: { id: true } });
+      lateMinutes = minutesLate(now, settings, () => !!holiday);
+    }
 
     return attendanceRepository.recordPunch({
       employeeId,
       workDate: today,
       type: input.type,
-      occurredAt: now,
+      occurredAt: now.toISOString(),
       source: input.source,
       ip,
+      lateMinutes,
     });
   },
 

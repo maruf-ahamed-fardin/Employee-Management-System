@@ -482,8 +482,8 @@ export function AttendanceChart({
       'Full Name',
       'Department',
       'Position',
-      'Clock In',
-      'Clock Out',
+      'Check In',
+      'Check Out',
       'Duration',
       'Status',
     ];
@@ -1089,7 +1089,7 @@ export function AttendanceChart({
                     </div>
                   </div>
 
-                  {/* Right: Clock In / Out Telemetry */}
+                  {/* Right: Check In / Out Telemetry */}
                   <div className="flex flex-col items-end shrink-0 text-right">
                     {person.hasPunchedIn ? (
                       <>
@@ -1138,8 +1138,8 @@ export function AttendanceChart({
                   <tr>
                     <th className="py-2.5 px-3">Staff Member</th>
                     <th className="py-2.5 px-3">Department & Role</th>
-                    <th className="py-2.5 px-3">Clock In (BST)</th>
-                    <th className="py-2.5 px-3">Clock Out (BST)</th>
+                    <th className="py-2.5 px-3">Check In (BST)</th>
+                    <th className="py-2.5 px-3">Check Out (BST)</th>
                     <th className="py-2.5 px-3">Worked Duration</th>
                     <th className="py-2.5 px-3">Compliance</th>
                     <th className="py-2.5 px-3">Status</th>

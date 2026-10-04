@@ -1,5 +1,8 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth/session';
+import { canAccessEmployeeDocuments, canManageDocuments } from '@/lib/auth/documents';
+import { documentService } from '@/server/services/document.service';
 import { EmployeeDocuments } from '@/components/employees/EmployeeDocuments';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -11,14 +14,21 @@ export default async function EmployeeDocumentsPage({
 }) {
   const { employeeId } = await params;
 
-  const [employee, documents] = await Promise.all([
+  const session = await getSession();
+  if (!session) redirect('/login');
+  // Same response as a missing employee, so ids can't be probed
+  if (!canAccessEmployeeDocuments(session, employeeId)) notFound();
+
+  const [employee, documents, documentTypes] = await Promise.all([
     prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, firstName: true, lastName: true, employeeCode: true },
     }),
-    prisma.document.findMany({
-      where: { employeeId },
-      orderBy: { createdAt: 'desc' },
+    documentService.list({ employeeId }),
+    prisma.documentType.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, code: true, isSensitive: true },
+      orderBy: { name: 'asc' },
     }),
   ]);
 
@@ -34,7 +44,12 @@ export default async function EmployeeDocumentsPage({
         Back to {employee.firstName}’s Profile
       </Link>
 
-      <EmployeeDocuments employeeId={employeeId} initialDocuments={documents} />
+      <EmployeeDocuments
+        employee={employee}
+        initialDocuments={documents}
+        documentTypes={documentTypes}
+        canManage={canManageDocuments(session.role)}
+      />
     </div>
   );
 }

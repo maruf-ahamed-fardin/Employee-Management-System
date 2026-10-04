@@ -33,6 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/format';
+import { confirmDialog } from '@/components/ui/confirm';
 
 export interface TicketItem {
   id: string;
@@ -227,7 +228,13 @@ export function HelpdeskClient({
   };
 
   const handleDelete = async (ticketId: string) => {
-    if (!confirm('Are you sure you want to delete this ticket?')) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete this ticket?',
+      description: 'The ticket and its history will be permanently removed.',
+      confirmLabel: 'Delete Ticket',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/tickets/${ticketId}`, { method: 'DELETE' });
       const data = await res.json();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/api/response';
 import { userRepository } from '@/server/repositories/user.repository';
-import { encodeSession, SESSION_COOKIE_NAME } from '@/lib/auth/session';
+import { encodeSession, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
 import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       status: (user.status as any) || 'ACTIVE',
     };
 
-    const token = encodeSession(sessionPayload);
+    const token = await encodeSession(sessionPayload);
 
     // Set secure cookie
     const cookieStore = await cookies();
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: SESSION_MAX_AGE_SECONDS,
     });
 
     return successResponse({

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Shield, UserPlus, KeyRound, Power, PowerOff, Search, Loader2, UserCog, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/components/ui/confirm';
 
 export interface UserItem {
   id: string;
@@ -147,12 +148,21 @@ export function UserManagementClient({ initialUsers, roles, unlinkedEmployees }:
 
   const handleToggleStatus = async (user: UserItem) => {
     const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    const confirmMsg =
+    const confirmed = await confirmDialog(
       nextStatus === 'INACTIVE'
-        ? `Are you sure you want to deactivate ${user.email}? They will no longer be able to log in.`
-        : `Reactivate account for ${user.email}?`;
-
-    if (!confirm(confirmMsg)) return;
+        ? {
+            title: 'Deactivate this account?',
+            description: `${user.email} will no longer be able to log in.`,
+            confirmLabel: 'Deactivate',
+            tone: 'danger',
+          }
+        : {
+            title: 'Reactivate this account?',
+            description: `${user.email} will be able to log in again.`,
+            confirmLabel: 'Reactivate',
+          }
+    );
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/users/${user.id}`, {

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
+import { ConfirmHost } from '@/components/ui/confirm';
 import './globals.css';
 
 const inter = Inter({
@@ -70,7 +71,25 @@ export default function RootLayout({
         className={`${inter.className} min-h-screen bg-background text-foreground antialiased selection:bg-[#f97316]/20 selection:text-[#ea580c] dark:selection:bg-[#fb923c]/30 dark:selection:text-[#fb923c]`}
       >
         {children}
-        <Toaster position="top-right" richColors />
+        <ConfirmHost />
+        <Toaster
+          position="top-right"
+          gap={10}
+          toastOptions={{
+            classNames: {
+              toast:
+                'rounded-2xl! border! border-border! bg-popover/95! text-popover-foreground! shadow-[var(--shadow-card)]! backdrop-blur-xl! px-4! py-3.5! gap-3!',
+              title: 'text-sm! font-semibold! text-foreground!',
+              description: 'text-xs! text-muted-foreground!',
+              icon: 'size-8! m-0! shrink-0 items-center justify-center rounded-full [&>svg]:size-4',
+              success: '[&_[data-icon]]:bg-emerald-500/15 [&_[data-icon]]:text-emerald-500',
+              error: '[&_[data-icon]]:bg-destructive/15 [&_[data-icon]]:text-destructive',
+              warning: '[&_[data-icon]]:bg-amber-500/15 [&_[data-icon]]:text-amber-500',
+              info: '[&_[data-icon]]:bg-primary/15 [&_[data-icon]]:text-brand-blue',
+              closeButton: 'bg-popover! border-border! text-muted-foreground!',
+            },
+          }}
+        />
       </body>
     </html>
   );

@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { AddAssetModal } from '@/components/assets/AddAssetModal';
 import { AssignAssetModal } from '@/components/assets/AssignAssetModal';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/components/ui/confirm';
 
 interface AssetRecord {
   id: string;
@@ -122,7 +123,12 @@ export function AssetsClient({ employees = [] }: { employees: any[] }) {
   };
 
   const handleReturnAsset = async (asset: AssetRecord) => {
-    if (!confirm(`Check in "${asset.name}" (${asset.assetTag}) back to inventory storage?`)) return;
+    const confirmed = await confirmDialog({
+      title: 'Return asset to inventory?',
+      description: `${asset.name} (${asset.assetTag}) will be checked back in to inventory storage.`,
+      confirmLabel: 'Return Asset',
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/assets/${asset.id}`, {
@@ -154,7 +160,13 @@ export function AssetsClient({ employees = [] }: { employees: any[] }) {
   };
 
   const handleDelete = async (asset: AssetRecord) => {
-    if (!confirm(`Are you sure you want to delete ${asset.name} (${asset.assetTag}) permanently?`)) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete this asset?',
+      description: `${asset.name} (${asset.assetTag}) will be permanently removed. This cannot be undone.`,
+      confirmLabel: 'Delete Asset',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/assets/${asset.id}`, {

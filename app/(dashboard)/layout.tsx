@@ -2,18 +2,21 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { getOrganizationProfile } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const organization = await getOrganizationProfile();
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* Sidebar for Desktop */}
-      <Sidebar />
+      <Sidebar organizationName={organization.name} />
 
       {/* Mobile Navigation Drawer */}
       <MobileNav />

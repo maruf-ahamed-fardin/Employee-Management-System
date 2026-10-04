@@ -505,7 +505,7 @@ export function LivePunchTerminal({
                   : fixedBreakStatus.status === 'ACTIVE'
                   ? `${selectedShift === 'DAY' ? 'Lunch & Prayer' : 'Midnight Break'} Active`
                   : 'Active Session Live'
-                : 'Not Clocked In'}
+                : 'Not Checked In'}
             </span>
             <span className="font-mono">{shiftPercent}% Target</span>
           </div>
@@ -610,7 +610,7 @@ export function LivePunchTerminal({
                 )}
               >
                 <LogIn className="size-4.5" />
-                <span>{punching ? 'Recording Punch...' : `Clock In (${currentShiftConfig.shortLabel})`}</span>
+                <span>{punching ? 'Recording Punch...' : `Check In (${currentShiftConfig.shortLabel})`}</span>
               </button>
             ) : !hasCheckedOut ? (
               <button
@@ -620,7 +620,7 @@ export function LivePunchTerminal({
                 className="w-full h-12 px-6 rounded-2xl bg-gradient-to-r from-[#F37021] to-rose-600 hover:from-[#ff8838] hover:to-rose-500 text-white font-bold text-sm shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <LogOut className="size-4.5" />
-                <span>{punching ? 'Recording...' : `Clock Out (${currentShiftConfig.shortLabel})`}</span>
+                <span>{punching ? 'Recording...' : `Check Out (${currentShiftConfig.shortLabel})`}</span>
               </button>
             ) : (
               <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
@@ -633,7 +633,7 @@ export function LivePunchTerminal({
                   onClick={handleResumeShift}
                   disabled={punching}
                   className="h-12 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0"
-                  title="Accidentally clocked out? Click to resume shift"
+                  title="Accidentally checked out? Click to resume shift"
                 >
                   <RotateCcw className={`size-4 ${punching ? 'animate-spin' : ''}`} />
                   <span>Resume Shift</span>
