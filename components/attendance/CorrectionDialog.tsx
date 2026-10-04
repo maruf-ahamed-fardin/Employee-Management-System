@@ -185,7 +185,7 @@ export function CorrectionDialog({ employees, defaultDate, record, trigger, onSu
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <Clock className="size-3.5 text-[#252175] dark:text-[#F37021]" />
-                    Clock In Time
+                    Check In Time
                   </Label>
                   <Input
                     type="time"
@@ -198,7 +198,7 @@ export function CorrectionDialog({ employees, defaultDate, record, trigger, onSu
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <Clock className="size-3.5 text-[#252175] dark:text-[#F37021]" />
-                    Clock Out Time
+                    Check Out Time
                   </Label>
                   <Input
                     type="time"

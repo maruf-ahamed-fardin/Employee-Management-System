@@ -25,6 +25,7 @@ import { useAttendanceStore } from '@/stores/attendance.store';
 import { formatTime, formatDuration } from '@/lib/utils/date';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { confirmDialog } from '@/components/ui/confirm';
 
 export function DashboardHero({
   leaveTypes = [],
@@ -132,7 +133,13 @@ export function DashboardHero({
 
   const handlePunchAction = async () => {
     if (isCheckedIn) {
-      const confirmed = window.confirm('Are you sure you want to Clock Out and end your workday?');
+      const confirmed = await confirmDialog({
+        title: 'Check out for today?',
+        description: 'This ends your workday and stops the timer. You can resume the shift if you check out by mistake.',
+        confirmLabel: 'Check Out',
+        cancelLabel: 'Keep Working',
+        tone: 'warning',
+      });
       if (!confirmed) return;
     }
     const action = isCheckedIn ? 'CHECK_OUT' : 'CHECK_IN';
@@ -240,7 +247,7 @@ export function DashboardHero({
                       onClick={() => resumeShift()}
                       disabled={isPunching}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm hover:shadow-indigo-500/25 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                      title="Accidentally clocked out? Click to resume shift"
+                      title="Accidentally checked out? Click to resume shift"
                     >
                       <RotateCcw className={`size-3.5 ${isPunching ? 'animate-spin' : ''}`} />
                       <span>{isPunching ? 'Resuming...' : 'Resume Shift'}</span>
@@ -271,12 +278,12 @@ export function DashboardHero({
                   ) : isCheckedIn ? (
                     <>
                       <LogOut className="size-4" />
-                      <span>Clock Out (End Workday)</span>
+                      <span>Check Out (End Workday)</span>
                     </>
                   ) : (
                     <>
                       <LogIn className="size-4" />
-                      <span>Clock In Now</span>
+                      <span>Check In Now</span>
                       <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-white/20 text-white ml-1">
                         Day Shift
                       </span>
@@ -290,9 +297,9 @@ export function DashboardHero({
             <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 px-0.5">
               <span>
                 {isCheckedIn
-                  ? `Clocked in at ${formatTime(attendance?.firstInAt)}`
+                  ? `Checked in at ${formatTime(attendance?.firstInAt)}`
                   : isCheckedOut
-                  ? `Clocked out at ${formatTime(attendance?.lastOutAt)}`
+                  ? `Checked out at ${formatTime(attendance?.lastOutAt)}`
                   : 'HQ Biometric & Web Punch'}
               </span>
               <Link

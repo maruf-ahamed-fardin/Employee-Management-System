@@ -84,10 +84,10 @@ export function HeaderPunchWidget() {
           onClick={() => punch('CHECK_OUT')}
           disabled={isPunching}
           className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 font-sans font-bold text-[11px] transition-all cursor-pointer border border-rose-500/30"
-          title="Click to Clock Out"
+          title="Click to Check Out"
         >
           <LogOut className={`size-3 ${isPunching ? 'animate-spin' : ''}`} />
-          <span>{isPunching ? 'Clocking out...' : 'Clock Out'}</span>
+          <span>{isPunching ? 'Checking out...' : 'Check Out'}</span>
         </button>
       </div>
     );
@@ -98,10 +98,10 @@ export function HeaderPunchWidget() {
       onClick={() => punch('CHECK_IN')}
       disabled={isPunching}
       className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm hover:shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
-      title="Click to Clock In for your workday"
+      title="Click to Check In for your workday"
     >
       <Clock className={`size-3.5 ${isPunching ? 'animate-spin' : ''}`} />
-      <span>{isPunching ? 'Clocking in...' : 'Clock In'}</span>
+      <span>{isPunching ? 'Checking in...' : 'Check In'}</span>
     </button>
   );
 }
