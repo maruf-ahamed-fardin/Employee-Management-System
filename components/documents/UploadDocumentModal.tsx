@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UploadCloud, Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronDown, FileCheck2, Loader2, Lock, UploadCloud, X } from 'lucide-react';
+import { cn } from '@/lib/utils/format';
 import { toast } from 'sonner';
 
 interface EmployeeOption {
@@ -20,84 +21,95 @@ interface DocumentTypeOption {
   id: string;
   name: string;
   code: string;
+  isSensitive?: boolean;
 }
 
 interface Props {
   employees: EmployeeOption[];
   documentTypes: DocumentTypeOption[];
+  /** Pre-selects the employee; with a single-entry `employees` list the picker is hidden. */
   currentEmployeeId?: string;
+  onUploaded?: (doc: any) => void;
+  size?: 'default' | 'sm';
 }
 
-export function UploadDocumentModal({ employees, documentTypes, currentEmployeeId }: Props) {
+const MAX_BYTES = 10 * 1024 * 1024;
+const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.doc,.docx';
+const ACCEPT_PATTERN = /\.(pdf|png|jpe?g|webp|docx?)$/i;
+
+const labelClass = 'text-xs font-semibold uppercase tracking-wider text-muted-foreground';
+const selectClass =
+  'h-10 w-full appearance-none rounded-xl border border-input bg-background pl-3 pr-9 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring';
+
+const formatSize = (bytes: number) =>
+  bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+export function UploadDocumentModal({ employees, documentTypes, currentEmployeeId, onUploaded, size = 'default' }: Props) {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [employeeId, setEmployeeId] = useState(currentEmployeeId || (employees[0]?.id ?? ''));
   const [documentTypeId, setDocumentTypeId] = useState(documentTypes[0]?.id ?? '');
   const [title, setTitle] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
-  const [isSensitive, setIsSensitive] = useState(false);
-  const [fileName, setFileName] = useState('');
-  const [fileSize, setFileSize] = useState<number>(0);
-  const [fileType, setFileType] = useState('application/pdf');
+  const [isSensitive, setIsSensitive] = useState(documentTypes[0]?.isSensitive ?? false);
+  const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      setFileSize(file.size);
-      setFileType(file.type || 'application/octet-stream');
-      if (!title) {
-        // Auto-fill title with filename minus extension
-        setTitle(file.name.replace(/\.[^/.]+$/, ''));
-      }
+  const showEmployeePicker = employees.length > 1;
+
+  const reset = () => {
+    setTitle('');
+    setExpiresAt('');
+    setFile(null);
+    setError(null);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const chooseFile = (next: File | undefined) => {
+    if (!next) return;
+    if (!ACCEPT_PATTERN.test(next.name)) {
+      setError('Unsupported file. Upload a PDF, PNG, JPG, WEBP, DOC or DOCX.');
+      return;
     }
+    if (next.size > MAX_BYTES) {
+      setError(`That file is ${formatSize(next.size)}. The limit is 10 MB.`);
+      return;
+    }
+    setError(null);
+    setFile(next);
+    // Auto-fill title with filename minus extension
+    if (!title.trim()) setTitle(next.name.replace(/\.[^/.]+$/, ''));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('Please provide a document title');
-      return;
-    }
-    if (!employeeId) {
-      setError('Please select an employee');
-      return;
-    }
+    if (!file) return setError('Please choose a file to upload');
+    if (!title.trim()) return setError('Please provide a document title');
+    if (!employeeId) return setError('Please select an employee');
 
     setLoading(true);
     setError(null);
 
     try {
-      const selectedType = documentTypes.find((t) => t.id === documentTypeId);
-      const res = await fetch('/api/documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId,
-          title: title.trim(),
-          documentTypeId: documentTypeId || undefined,
-          documentType: selectedType?.code || 'OTHER',
-          storageUrl: `/uploads/${fileName || 'document.pdf'}`,
-          mimeType: fileType,
-          sizeBytes: fileSize || 1024 * 250, // default 250kb if simulated
-          expiresAt: expiresAt || null,
-          isSensitive,
-        }),
-      });
+      const form = new FormData();
+      form.set('file', file);
+      form.set('employeeId', employeeId);
+      form.set('title', title.trim());
+      form.set('documentTypeId', documentTypeId);
+      form.set('expiresAt', expiresAt);
+      form.set('isSensitive', String(isSensitive));
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to upload document');
-      }
+      const res = await fetch('/api/documents', { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to upload document');
 
       toast.success('Document uploaded successfully');
+      onUploaded?.(data.data);
       setOpen(false);
-      setTitle('');
-      setFileName('');
-      setFileSize(0);
-      setExpiresAt('');
+      reset();
       router.refresh();
     } catch (err: any) {
       setError(err?.message || 'Error uploading document');
@@ -107,152 +119,190 @@ export function UploadDocumentModal({ employees, documentTypes, currentEmployeeI
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-[#252175] hover:bg-[#1d1a5c] text-white gap-2 font-medium">
-          <UploadCloud className="size-4 text-[#F37021]" />
-          Upload Document
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#252175] dark:text-white flex items-center gap-2">
-              <UploadCloud className="size-5 text-[#F37021]" />
-              Upload Employee Document
-            </DialogTitle>
-            <DialogDescription>
-              Upload contracts, identity cards, degrees, certifications, or tax records.
-            </DialogDescription>
-          </DialogHeader>
+    <>
+      <Button onClick={() => setOpen(true)} size={size} className="gap-2 shadow-md shadow-primary/25">
+        <UploadCloud className={size === 'sm' ? 'size-3.5' : 'size-4'} />
+        Upload Document
+      </Button>
 
-          {error && (
-            <div className="mt-3 p-3 text-sm bg-destructive/10 text-destructive rounded-lg flex items-center gap-2">
-              <AlertCircle className="size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+      <Dialog open={open} onOpenChange={(next) => !loading && setOpen(next)}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+                <UploadCloud className="size-5 text-brand-orange" />
+                Upload Document
+              </DialogTitle>
+              <DialogDescription>Contracts, identity cards, certificates or tax records. PDF, image or Word, up to 10 MB.</DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Employee
-              </Label>
-              <select
-                className="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#252175]"
-                value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
-                required
+            {error && (
+              <div role="alert" className="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="space-y-4 py-4">
+              {/* Drop zone */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                  chooseFile(e.dataTransfer.files?.[0]);
+                }}
+                className={cn(
+                  'rounded-2xl border-2 border-dashed transition-colors',
+                  dragging ? 'border-primary bg-primary/10' : file ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-border bg-muted/20 hover:border-primary/50'
+                )}
               >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.firstName} {emp.lastName} ({emp.employeeCode})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Document Type
-                </Label>
-                <select
-                  className="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#252175]"
-                  value={documentTypeId}
-                  onChange={(e) => setDocumentTypeId(e.target.value)}
-                >
-                  {documentTypes.map((dt) => (
-                    <option key={dt.id} value={dt.id}>
-                      {dt.name}
-                    </option>
-                  ))}
-                  <option value="">Other / General</option>
-                </select>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Expiration Date (Optional)
-                </Label>
-                <Input
-                  type="date"
-                  className="mt-1.5"
-                  value={expiresAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Document Title
-              </Label>
-              <Input
-                placeholder="e.g. National ID Card Copy / Offer Letter 2026"
-                className="mt-1.5"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Select File
-              </Label>
-              <div className="mt-1.5 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-4 hover:border-[#252175]/60 transition-colors bg-muted/20">
                 <input
+                  ref={inputRef}
                   type="file"
                   id="doc-file-input"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  className="sr-only"
+                  accept={ACCEPT}
+                  onChange={(e) => chooseFile(e.target.files?.[0])}
                 />
-                <label
-                  htmlFor="doc-file-input"
-                  className="cursor-pointer text-center flex flex-col items-center"
-                >
-                  <UploadCloud className="size-8 text-[#252175] dark:text-[#F37021] mb-2" />
-                  <span className="text-sm font-medium text-foreground">
-                    {fileName ? fileName : 'Click to choose file (PDF, Image, DOC)'}
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    {fileSize ? `${(fileSize / 1024).toFixed(1)} KB` : 'Maximum file size: 10 MB'}
-                  </span>
-                </label>
+                {file ? (
+                  <div className="flex items-center gap-3 p-4">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                      <FileCheck2 className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>
+                    </div>
+                    <label htmlFor="doc-file-input" className="cursor-pointer rounded-lg px-2 py-1 text-xs font-semibold text-brand-blue hover:bg-primary/10">
+                      Replace
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFile(null);
+                        if (inputRef.current) inputRef.current.value = '';
+                      }}
+                      aria-label="Remove file"
+                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label htmlFor="doc-file-input" className="flex cursor-pointer flex-col items-center px-4 py-7 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-brand-blue">
+                      <UploadCloud className="size-6" />
+                    </div>
+                    <span className="mt-3 text-sm font-semibold text-foreground">
+                      Drop a file here, or <span className="text-brand-blue">browse</span>
+                    </span>
+                    <span className="mt-1 text-xs text-muted-foreground">PDF, PNG, JPG, WEBP, DOC, DOCX · max 10 MB</span>
+                  </label>
+                )}
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="isSensitive"
-                checked={isSensitive}
-                onChange={(e) => setIsSensitive(e.target.checked)}
-                className="size-4 rounded border-gray-300 text-[#252175] focus:ring-[#252175]"
-              />
-              <label htmlFor="isSensitive" className="text-sm font-medium cursor-pointer">
-                Mark as confidential / private (restricted access)
+              <div>
+                <Label htmlFor="doc-title" className={labelClass}>
+                  Document Title
+                </Label>
+                <Input
+                  id="doc-title"
+                  placeholder="e.g. National ID Card / Offer Letter 2026"
+                  className="mt-1.5"
+                  value={title}
+                  maxLength={150}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              {showEmployeePicker && (
+                <div>
+                  <Label htmlFor="doc-employee" className={labelClass}>
+                    Employee
+                  </Label>
+                  <div className="relative mt-1.5">
+                    <select id="doc-employee" className={selectClass} value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.firstName} {emp.lastName} ({emp.employeeCode})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="doc-type" className={labelClass}>
+                    Document Type
+                  </Label>
+                  <div className="relative mt-1.5">
+                    <select
+                      id="doc-type"
+                      className={selectClass}
+                      value={documentTypeId}
+                      onChange={(e) => {
+                        setDocumentTypeId(e.target.value);
+                        // Follow the classification's default; the user can still override it below
+                        setIsSensitive(documentTypes.find((t) => t.id === e.target.value)?.isSensitive ?? false);
+                      }}
+                    >
+                      {documentTypes.map((dt) => (
+                        <option key={dt.id} value={dt.id}>
+                          {dt.name}
+                        </option>
+                      ))}
+                      <option value="">Other / General</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="doc-expiry" className={labelClass}>
+                    Expiry Date (optional)
+                  </Label>
+                  <Input id="doc-expiry" type="date" className="mt-1.5" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+                </div>
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border bg-muted/20 p-3">
+                <input
+                  type="checkbox"
+                  checked={isSensitive}
+                  onChange={(e) => setIsSensitive(e.target.checked)}
+                  className="mt-0.5 size-4 rounded accent-[var(--primary)]"
+                />
+                <span>
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <Lock className="size-3.5 text-muted-foreground" />
+                    Mark as confidential
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">Flags the document as sensitive in the repository.</span>
+                </span>
               </label>
             </div>
-          </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-[#252175] hover:bg-[#1d1a5c] text-white"
-            >
-              {loading && <Loader2 className="size-4 mr-2 animate-spin" />}
-              Save & Upload
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || !file}>
+                {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {loading ? 'Uploading…' : 'Upload'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
