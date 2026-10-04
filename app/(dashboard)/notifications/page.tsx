@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { NotificationList } from '@/components/notifications/NotificationList';
 import { MarkAllReadButton } from '@/components/notifications/MarkAllReadButton';
@@ -16,10 +18,14 @@ export default async function NotificationsPage({
 }: {
   searchParams: Promise<{ unread?: string }>;
 }) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
   const { unread } = await searchParams;
   const isUnreadOnly = unread === 'true';
 
-  const where: any = {};
+  // Notifications are personal: only ever the signed-in user's own
+  const where: any = { userId: session.id };
   if (isUnreadOnly) {
     where.isRead = false;
   }
@@ -31,7 +37,7 @@ export default async function NotificationsPage({
       orderBy: { createdAt: 'desc' },
     }),
     prisma.notification.count({
-      where: { isRead: false },
+      where: { userId: session.id, isRead: false },
     }),
   ]);
 
