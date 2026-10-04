@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils/date';
 import { Eye, Edit3, Trash2, Plus, CheckSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/components/ui/confirm';
 
 export interface EmployeeTableProps {
   employees: any[];
@@ -17,7 +18,13 @@ export interface EmployeeTableProps {
 
 export function EmployeeTable({ employees = [], onDelete, onAssignTask }: EmployeeTableProps) {
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete this employee?',
+      description: `${name} will be removed from the employee directory.`,
+      confirmLabel: 'Delete Employee',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
       const data = await res.json();

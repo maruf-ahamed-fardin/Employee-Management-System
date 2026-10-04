@@ -125,6 +125,21 @@
   --shadow-card: 0 20px 25px -5px rgb(0 0 0 / 0.45), 0 8px 10px -6px rgb(99 102 241 / 0.04);
 }
 
+/*
+  Tailwind v4 draws a bare `border` / `divide-y` in currentColor (the text color),
+  which shows up as harsh white outlines in dark mode. Default every border to the
+  theme's border token instead; explicit border-* color utilities still win.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--background);
@@ -329,3 +344,25 @@ select option {
   color: #f8fafc !important;
 }
 
+
+/* Confirm dialog entrance */
+@keyframes confirm-backdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes confirm-panel {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-confirm-backdrop {
+  animation: confirm-backdrop 160ms ease-out both;
+}
+.animate-confirm-panel {
+  animation: confirm-panel 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-confirm-backdrop,
+  .animate-confirm-panel {
+    animation: none;
+  }
+}
