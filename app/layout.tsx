@@ -81,7 +81,7 @@ export default function RootLayout({
                 'rounded-2xl! border! border-border! bg-popover/95! text-popover-foreground! shadow-[var(--shadow-card)]! backdrop-blur-xl! px-4! py-3.5! gap-3!',
               title: 'text-sm! font-semibold! text-foreground!',
               description: 'text-xs! text-muted-foreground!',
-              icon: 'size-8! m-0! shrink-0 items-center justify-center rounded-full [&>svg]:size-4',
+              icon: 'flex! size-8! m-0! shrink-0 items-center! justify-center! rounded-full! [&>svg]:size-4!',
               success: '[&_[data-icon]]:bg-emerald-500/15 [&_[data-icon]]:text-emerald-500',
               error: '[&_[data-icon]]:bg-destructive/15 [&_[data-icon]]:text-destructive',
               warning: '[&_[data-icon]]:bg-amber-500/15 [&_[data-icon]]:text-amber-500',

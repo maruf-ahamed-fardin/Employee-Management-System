@@ -25,9 +25,12 @@ let cachedKey: Promise<CryptoKey> | null = null;
 
 function getKey(): Promise<CryptoKey> {
   if (!cachedKey) {
-    const secret = process.env.AUTH_SECRET;
+    let secret = process.env.AUTH_SECRET;
     if (!secret || secret.length < 32) {
-      throw new Error('AUTH_SECRET must be set to a random string of at least 32 characters');
+      // Demo fallback so zero-setup deployments (where .env is not committed) can still sign in.
+      // Set AUTH_SECRET to a random 32+ character string for any real deployment.
+      console.warn('AUTH_SECRET is missing or shorter than 32 characters; using insecure demo secret');
+      secret = 'selorax-ems-insecure-demo-secret-change-me';
     }
     cachedKey = crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
       'sign',
