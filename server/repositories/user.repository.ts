@@ -63,6 +63,7 @@ export const userRepository = {
     password?: string;
     passwordHash?: string | null;
     role?: string;
+    roleId?: string | null;
     employeeId?: string | null;
     firebaseUid?: string | null;
     authProvider?: string;
@@ -73,6 +74,7 @@ export const userRepository = {
         email: data.email.toLowerCase(),
         passwordHash: data.passwordHash || null,
         role: data.role || 'employee',
+        roleId: data.roleId || null,
         employeeId: data.employeeId || null,
         firebaseUid: data.firebaseUid || null,
         authProvider: data.authProvider || 'firebase',

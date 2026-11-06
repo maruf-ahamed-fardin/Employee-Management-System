@@ -3,7 +3,11 @@ import { getAuth, type Auth, type DecodedIdToken } from 'firebase-admin/auth';
 
 function formatPrivateKey(key?: string): string | undefined {
   if (!key) return undefined;
-  return key.replace(/\\n/g, '\n');
+  let formatted = key.trim();
+  if (formatted.startsWith('"') && formatted.endsWith('"')) {
+    formatted = formatted.slice(1, -1);
+  }
+  return formatted.replace(/\\n/g, '\n');
 }
 
 export function isFirebaseAdminConfigured(): boolean {
@@ -15,8 +19,9 @@ export function isFirebaseAdminConfigured(): boolean {
 }
 
 function getAdminApp(): App {
-  if (getApps().length > 0) {
-    return getApp();
+  const apps = getApps();
+  if (apps.length > 0) {
+    return apps[0];
   }
 
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -48,4 +53,3 @@ export async function verifyFirebaseToken(idToken: string): Promise<DecodedIdTok
   const auth = getAdminAuth();
   return auth.verifyIdToken(idToken);
 }
-
