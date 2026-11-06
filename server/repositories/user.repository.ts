@@ -44,13 +44,65 @@ export const userRepository = {
     });
   },
 
-  async create(data: UserCreateInput & { passwordHash: string }) {
+  async findByFirebaseUid(firebaseUid: string) {
+    return prisma.user.findUnique({
+      where: { firebaseUid },
+      include: {
+        employee: {
+          include: {
+            department: true,
+            position: true,
+          },
+        },
+      },
+    });
+  },
+
+  async create(data: {
+    email: string;
+    password?: string;
+    passwordHash?: string | null;
+    role?: string;
+    employeeId?: string | null;
+    firebaseUid?: string | null;
+    authProvider?: string;
+    status?: string;
+  }) {
     return prisma.user.create({
       data: {
         email: data.email.toLowerCase(),
-        passwordHash: data.passwordHash,
-        role: data.role,
+        passwordHash: data.passwordHash || null,
+        role: data.role || 'employee',
         employeeId: data.employeeId || null,
+        firebaseUid: data.firebaseUid || null,
+        authProvider: data.authProvider || 'firebase',
+        status: data.status || 'ACTIVE',
+      },
+      include: {
+        employee: {
+          include: {
+            department: true,
+            position: true,
+          },
+        },
+      },
+    });
+  },
+
+  async linkFirebaseUid(id: string, firebaseUid: string, authProvider = 'firebase') {
+    return prisma.user.update({
+      where: { id },
+      data: {
+        firebaseUid,
+        authProvider,
+      },
+      include: {
+        employee: {
+          include: {
+            department: true,
+            position: true,
+          },
+        },
       },
     });
   },
