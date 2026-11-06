@@ -8,6 +8,7 @@ if (!process.env.AUTH_SECRET) {
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['firebase-admin'],
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
@@ -21,6 +22,19 @@ const nextConfig: NextConfig = {
         hostname: '**',
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
+      },
+    ];
   },
 };
 

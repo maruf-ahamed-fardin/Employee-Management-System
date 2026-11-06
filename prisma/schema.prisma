@@ -14,7 +14,9 @@ datasource db {
 model User {
   id                String    @id @default(uuid())
   email             String    @unique
-  passwordHash      String
+  passwordHash      String?
+  firebaseUid       String?   @unique
+  authProvider      String    @default("firebase")
   role              String    @default("employee") // legacy/convenience string: super_admin, admin, manager, employee, hr
   roleId            String?
   employeeId        String?   @unique
