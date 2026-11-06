@@ -8,15 +8,28 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SeloraLogo } from '@/components/brand/SeloraLogo';
+import { resetPassword, isFirebaseConfigured } from '@/lib/firebase/client';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    toast.success('Reset link dispatched to your work email');
+    setLoading(true);
+
+    try {
+      if (isFirebaseConfigured()) {
+        await resetPassword(email.trim());
+      }
+      setSubmitted(true);
+      toast.success('Reset link dispatched to your work email');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to send password reset email');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,7 +54,7 @@ export default function ForgotPasswordPage() {
                 <CheckCircle2 className="size-12 text-emerald-500 mx-auto" />
                 <h3 className="font-bold text-slate-900 dark:text-white">Check your inbox</h3>
                 <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                  If an account matches {email}, you will receive a link to choose a new password.
+                  If an account matches <span className="font-semibold text-foreground">{email}</span>, you will receive a link to choose a new password.
                 </p>
                 <div className="pt-4">
                   <Link href="/login">
@@ -53,7 +66,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Registered Email
+                    Registered Work Email
                   </label>
                   <div className="relative mt-1">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -62,14 +75,14 @@ export default function ForgotPasswordPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      placeholder="name@selorax.test"
+                      placeholder="name@company.com"
                       className="pl-9"
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-10 font-bold">
-                  Send reset instructions
+                <Button type="submit" disabled={loading} className="w-full h-10 font-bold">
+                  {loading ? 'Sending...' : 'Send reset instructions'}
                 </Button>
 
                 <div className="text-center pt-2">
