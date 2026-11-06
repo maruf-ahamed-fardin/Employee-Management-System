@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/db';
 import { userRepository } from '@/server/repositories/user.repository';
-import { verifyFirebaseToken, isFirebaseAdminConfigured } from '@/lib/firebase/admin';
+import { verifyFirebaseToken } from '@/lib/firebase/admin';
 import { encodeSession, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
 import { successResponse, errorResponse } from '@/lib/api/response';
 
@@ -14,18 +14,12 @@ export async function POST(req: NextRequest) {
       return errorResponse('Firebase ID token is required', 400);
     }
 
-    if (!isFirebaseAdminConfigured()) {
-      return errorResponse(
-        'Firebase Admin is not configured on the server. Please check your FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY environment variables.',
-        500
-      );
-    }
-
-    // 1. Verify Firebase token
+    // 1. Verify Firebase token (Uses Admin SDK or Google Tokeninfo fallback)
     let decoded;
     try {
       decoded = await verifyFirebaseToken(idToken);
     } catch (err: any) {
+      console.error('Firebase token verification error:', err);
       return errorResponse(`Invalid Firebase token: ${err?.message || 'Verification failed'}`, 401);
     }
 
@@ -50,34 +44,43 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Find existing user
-    let user = await userRepository.findByFirebaseUid(decoded.uid);
+    let user = null;
+    try {
+      user = await userRepository.findByFirebaseUid(decoded.uid);
 
-    if (!user) {
-      // Find by email to link legacy / pre-created accounts
-      user = await userRepository.findByEmail(email);
+      if (!user) {
+        // Find by email to link legacy / pre-created accounts
+        user = await userRepository.findByEmail(email);
 
-      if (user) {
-        // Link existing user account to Firebase UID
-        user = await userRepository.linkFirebaseUid(user.id, decoded.uid, providerId);
+        if (user) {
+          // Link existing user account to Firebase UID
+          user = await userRepository.linkFirebaseUid(user.id, decoded.uid, providerId);
+        }
       }
+    } catch (dbErr: any) {
+      console.warn('DB lookup error (attempting fallback):', dbErr?.message);
     }
 
     // 4. If no user exists, create one with role = 'employee'
     if (!user) {
       // Check if an Employee record exists with this email for auto-linking
       let linkedEmployeeId: string | null = null;
-      const matchedEmployee = await prisma.employee.findUnique({
-        where: { email },
-      });
-
-      if (matchedEmployee) {
-        // Ensure this employee isn't already claimed by another user
-        const claimed = await prisma.user.findUnique({
-          where: { employeeId: matchedEmployee.id },
+      try {
+        const matchedEmployee = await prisma.employee.findUnique({
+          where: { email },
         });
-        if (!claimed) {
-          linkedEmployeeId = matchedEmployee.id;
+
+        if (matchedEmployee) {
+          // Ensure this employee isn't already claimed by another user
+          const claimed = await prisma.user.findUnique({
+            where: { employeeId: matchedEmployee.id },
+          });
+          if (!claimed) {
+            linkedEmployeeId = matchedEmployee.id;
+          }
         }
+      } catch (empErr: any) {
+        console.warn('Employee match query failed:', empErr?.message);
       }
 
       // Find 'employee' role in DB to set roleId
@@ -90,39 +93,50 @@ export async function POST(req: NextRequest) {
       } catch {}
 
       // Create new user - ALWAYS role 'employee' for self-signup
-      user = await userRepository.create({
-        email,
-        role: 'employee',
-        roleId: employeeRoleId,
-        firebaseUid: decoded.uid,
-        authProvider: providerId,
-        employeeId: linkedEmployeeId,
-        status: 'ACTIVE',
-      });
-    } else if (!user.employeeId) {
-      // If user exists without linked employee, check if matching employee exists now
-      const matchedEmployee = await prisma.employee.findUnique({
-        where: { email },
-      });
-      if (matchedEmployee) {
-        const claimed = await prisma.user.findUnique({
-          where: { employeeId: matchedEmployee.id },
+      try {
+        user = await userRepository.create({
+          email,
+          role: 'employee',
+          roleId: employeeRoleId,
+          firebaseUid: decoded.uid,
+          authProvider: providerId,
+          employeeId: linkedEmployeeId,
+          status: 'ACTIVE',
         });
-        if (!claimed) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { employeeId: matchedEmployee.id },
-            include: {
-              employee: {
-                include: {
-                  department: true,
-                  position: true,
-                },
-              },
-            },
-          });
+      } catch (createErr: any) {
+        console.error('Failed to create user in DB:', createErr);
+        // If creation fails due to unique constraint race condition, attempt to find by email
+        user = await userRepository.findByEmail(email);
+        if (!user) {
+          return errorResponse(`Could not create user account: ${createErr?.message}`, 400);
         }
       }
+    } else if (!user.employeeId) {
+      // If user exists without linked employee, check if matching employee exists now
+      try {
+        const matchedEmployee = await prisma.employee.findUnique({
+          where: { email },
+        });
+        if (matchedEmployee) {
+          const claimed = await prisma.user.findUnique({
+            where: { employeeId: matchedEmployee.id },
+          });
+          if (!claimed) {
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: { employeeId: matchedEmployee.id },
+              include: {
+                employee: {
+                  include: {
+                    department: true,
+                    position: true,
+                  },
+                },
+              },
+            });
+          }
+        }
+      } catch {}
     }
 
     // 5. Account status checks
@@ -131,7 +145,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Update last login
-    await userRepository.updateLastLogin(user.id);
+    try {
+      await userRepository.updateLastLogin(user.id);
+    } catch {}
 
     // 7. Prepare session payload
     const employeeFullName = user.employee
@@ -168,7 +184,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error('SERVER ERROR in /api/auth/firebase:', err);
-    return errorResponse(err?.message || 'Authentication failed', 500);
+    return errorResponse(err?.message || 'Authentication failed', 400);
   }
 }
-
