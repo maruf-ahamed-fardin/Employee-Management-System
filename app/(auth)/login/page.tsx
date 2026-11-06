@@ -63,8 +63,7 @@ export default function LoginPage() {
 
       if (result.ok && result.data.success) {
         toast.success(result.data.message || 'Signed in with Google!');
-        router.push('/dashboard');
-        router.refresh();
+        window.location.href = '/dashboard';
       } else {
         toast.error(result.data.error || 'Google sign-in verification failed');
       }
@@ -132,8 +131,7 @@ export default function LoginPage() {
 
         if (result.ok && result.data.success) {
           toast.success('Signed in successfully!');
-          router.push('/dashboard');
-          router.refresh();
+          window.location.href = '/dashboard';
         } else if (result.status === 403 && result.data.emailVerified === false) {
           setNeedsVerification(true);
           toast.error(result.data.error || 'Please verify your email address.');
