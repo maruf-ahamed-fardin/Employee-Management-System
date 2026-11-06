@@ -40,7 +40,13 @@ export default function LoginPage() {
       body: JSON.stringify({ idToken }),
     });
 
-    const data = await res.json();
+    let data: any = {};
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { success: false, error: res.statusText || 'Server error verifying authentication' };
+    }
     return { ok: res.ok, status: res.status, data };
   };
 

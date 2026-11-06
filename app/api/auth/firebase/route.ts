@@ -80,10 +80,20 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Find 'employee' role in DB to set roleId
+      let employeeRoleId: string | null = null;
+      try {
+        const empRole = await prisma.role.findFirst({
+          where: { key: 'employee' },
+        });
+        if (empRole) employeeRoleId = empRole.id;
+      } catch {}
+
       // Create new user - ALWAYS role 'employee' for self-signup
       user = await userRepository.create({
         email,
         role: 'employee',
+        roleId: employeeRoleId,
         firebaseUid: decoded.uid,
         authProvider: providerId,
         employeeId: linkedEmployeeId,
@@ -157,6 +167,7 @@ export async function POST(req: NextRequest) {
       message: 'Signed in successfully via Firebase',
     });
   } catch (err: any) {
+    console.error('SERVER ERROR in /api/auth/firebase:', err);
     return errorResponse(err?.message || 'Authentication failed', 500);
   }
 }
